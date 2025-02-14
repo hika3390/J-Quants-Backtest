@@ -9,7 +9,7 @@ interface ConditionFormProps {
   type: TabType;
 }
 
-const ConditionForm = memo(({ type }: ConditionFormProps) => {
+const ConditionForm = memo(({}: ConditionFormProps) => {
   const [selectedIndicator, setSelectedIndicator] = useState('');
   const indicator = indicators.find(ind => ind.id === selectedIndicator);
 
