@@ -12,7 +12,6 @@ import {
   ColumnDef,
   SortingState,
 } from '@tanstack/react-table';
-import debounce from 'lodash/debounce';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
 
@@ -28,7 +27,7 @@ interface BacktestResult {
   status: 'completed' | 'failed';
 }
 
-// モックデータ生成...（既存のgenerateMockResults関数はそのまま）
+// モックデータ生成
 const generateMockResults = (): BacktestResult[] => {
   const strategies = [
     'ゴールデンクロス戦略', 'RSI逆張り戦略', 'ブレイクアウト戦略',
@@ -68,7 +67,6 @@ export default function BacktestResultsTable() {
   const [results, setResults] = useState<BacktestResult[]>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
-  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setResults(generateMockResults());
@@ -78,12 +76,9 @@ export default function BacktestResultsTable() {
     router.push(`/results/${id}`);
   }, [router]);
 
-  const debouncedSetGlobalFilter = useMemo(
-    () => debounce((value: string) => {
-      setGlobalFilter(value);
-    }, 200),
-    []
-  );
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setGlobalFilter(e.target.value);
+  }, []);
 
   const columns = useMemo<ColumnDef<BacktestResult>[]>(() => [
     {
@@ -177,7 +172,7 @@ export default function BacktestResultsTable() {
         <input
           type="text"
           value={globalFilter}
-          onChange={(e) => debouncedSetGlobalFilter(e.target.value)}
+          onChange={handleSearch}
           placeholder="検索..."
           className="w-full h-10 pl-10 pr-4 bg-slate-800 border-0 rounded-lg text-slate-200 placeholder-slate-400 focus:ring-1 focus:ring-slate-600"
         />
