@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -14,38 +15,49 @@ interface PageLayoutProps {
 }
 
 export function PageLayout({ children, title, subtitle, backLink }: PageLayoutProps) {
+  const pathname = usePathname();
+
   return (
-    <main className="relative min-h-screen bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10">
-      <div className="p-8">
-        <div className="max-w-4xl mx-auto space-y-8">
-          {/* 戻るリンク */}
-          {backLink && (
-            <div>
-              <Link
-                href={backLink.href}
-                className="inline-flex items-center text-white/60 hover:text-white transition-colors gap-2 px-4 py-2 rounded-lg hover:bg-white/5"
-              >
-                <span className="text-lg">←</span>
-                <span>{backLink.label}</span>
-              </Link>
-            </div>
-          )}
-
-          {/* タイトルセクション */}
-          <div className="text-center">
-            <h1 className="text-4xl font-black tracking-tight text-white/90 mb-4">
-              {title}
-            </h1>
-            {subtitle && (
-              <p className="text-lg text-white/60">
-                {subtitle}
-              </p>
+    <main className="min-h-screen bg-slate-900">
+      {/* 軽量化したグラデーション背景 */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-from)_0%,_transparent_35%)] from-indigo-500/20" />
+      
+      <div className="relative">
+        <div className="p-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* 戻るリンク */}
+            {backLink && (
+              <div>
+                <Link
+                  href={backLink.href}
+                  className="inline-flex items-center text-slate-400 hover:text-white gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5"
+                >
+                  <span>←</span>
+                  <span>{backLink.label}</span>
+                </Link>
+              </div>
             )}
-          </div>
 
-          {/* メインコンテンツ */}
-          <div>
-            {children}
+            {/* タイトルセクション */}
+            <div className="text-center">
+              <div className="mb-4">
+                {typeof title === 'string' ? (
+                  <h1 className="text-3xl font-bold text-white">{title}</h1>
+                ) : (
+                  title
+                )}
+              </div>
+              {subtitle && (
+                <p className="text-lg text-slate-400">
+                  {subtitle}
+                </p>
+              )}
+            </div>
+
+            {/* メインコンテンツ */}
+            <div className="relative">
+              {children}
+            </div>
           </div>
         </div>
       </div>

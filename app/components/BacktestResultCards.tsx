@@ -17,104 +17,101 @@ interface BacktestResult {
   status: string;
 }
 
-// 基本情報カード
+const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="bg-slate-800/50 rounded-xl shadow">
+    <div className="px-5 py-4">
+      <h2 className="text-lg font-medium text-white mb-4">{title}</h2>
+      <div className="space-y-3">
+        {children}
+      </div>
+    </div>
+  </div>
+);
+
+const DataItem = ({ label, value, className = "" }: { label: string; value: React.ReactNode; className?: string }) => (
+  <div className="flex justify-between">
+    <span className="text-slate-400">{label}</span>
+    <span className={className}>{value}</span>
+  </div>
+);
+
 export function BasicInfoCard({ result }: { result: BacktestResult }) {
   return (
-    <div className="backdrop-blur-sm bg-white/10 rounded-xl shadow-xl p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">基本情報</h2>
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <span className="text-white/60">戦略</span>
-          <span className="text-white">{result.strategy}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">通貨ペア</span>
-          <span className="text-white">{result.symbol}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">時間枠</span>
-          <span className="text-white">{result.timeframe}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">期間</span>
-          <span className="text-white">
-            {result.startDate} 〜 {result.endDate}
-          </span>
-        </div>
-      </div>
-    </div>
+    <Card title="基本情報">
+      <DataItem label="戦略" value={result.strategy} className="text-white" />
+      <DataItem label="通貨ペア" value={result.symbol} className="text-white" />
+      <DataItem label="時間枠" value={result.timeframe} className="text-white" />
+      <DataItem
+        label="期間"
+        value={`${result.startDate} 〜 ${result.endDate}`}
+        className="text-white"
+      />
+    </Card>
   );
 }
 
-// パフォーマンス指標カード
 export function PerformanceCard({ result }: { result: BacktestResult }) {
   return (
-    <div className="backdrop-blur-sm bg-white/10 rounded-xl shadow-xl p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">パフォーマンス指標</h2>
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <span className="text-white/60">総損益</span>
-          <span className={`${result.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-            {result.profit >= 0 ? '+' : ''}{result.profit.toLocaleString()} USD
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">勝率</span>
-          <span className="text-white">{result.winRate.toFixed(1)}%</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">取引回数</span>
-          <span className="text-white">{result.totalTrades.toLocaleString()}回</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">最大ドローダウン</span>
-          <span className="text-red-400">{result.maxDrawdown.toLocaleString()} USD</span>
-        </div>
-      </div>
-    </div>
+    <Card title="パフォーマンス指標">
+      <DataItem
+        label="総損益"
+        value={`${result.profit >= 0 ? '+' : ''}${result.profit.toLocaleString()} USD`}
+        className={result.profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}
+      />
+      <DataItem
+        label="勝率"
+        value={`${result.winRate.toFixed(1)}%`}
+        className="text-white"
+      />
+      <DataItem
+        label="取引回数"
+        value={`${result.totalTrades.toLocaleString()}回`}
+        className="text-white"
+      />
+      <DataItem
+        label="最大ドローダウン"
+        value={`${result.maxDrawdown.toLocaleString()} USD`}
+        className="text-rose-400"
+      />
+    </Card>
   );
 }
 
-// トレード統計カード
 export function TradeStatsCard({ result }: { result: BacktestResult }) {
   return (
-    <div className="backdrop-blur-sm bg-white/10 rounded-xl shadow-xl p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">トレード統計</h2>
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <span className="text-white/60">プロフィットファクター</span>
-          <span className="text-white">{result.profitFactor.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">平均利益</span>
-          <span className="text-green-400">+{result.averageWin.toLocaleString()} USD</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">平均損失</span>
-          <span className="text-red-400">{result.averageLoss.toLocaleString()} USD</span>
-        </div>
-      </div>
-    </div>
+    <Card title="トレード統計">
+      <DataItem
+        label="プロフィットファクター"
+        value={result.profitFactor.toFixed(2)}
+        className="text-white"
+      />
+      <DataItem
+        label="平均利益"
+        value={`+${result.averageWin.toLocaleString()} USD`}
+        className="text-emerald-400"
+      />
+      <DataItem
+        label="平均損失"
+        value={`${result.averageLoss.toLocaleString()} USD`}
+        className="text-rose-400"
+      />
+    </Card>
   );
 }
 
-// リスク分析カード
 export function RiskAnalysisCard({ result }: { result: BacktestResult }) {
   return (
-    <div className="backdrop-blur-sm bg-white/10 rounded-xl shadow-xl p-6">
-      <h2 className="text-xl font-semibold text-white mb-4">リスク分析</h2>
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <span className="text-white/60">リスク/リワード比率</span>
-          <span className="text-white">1:{Math.abs(result.averageWin / result.averageLoss).toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-white/60">最大ドローダウン率</span>
-          <span className="text-white">
-            {((Math.abs(result.maxDrawdown) / result.profit) * 100).toFixed(1)}%
-          </span>
-        </div>
-      </div>
-    </div>
+    <Card title="リスク分析">
+      <DataItem
+        label="リスク/リワード比率"
+        value={`1:${Math.abs(result.averageWin / result.averageLoss).toFixed(2)}`}
+        className="text-white"
+      />
+      <DataItem
+        label="最大ドローダウン率"
+        value={`${((Math.abs(result.maxDrawdown) / result.profit) * 100).toFixed(1)}%`}
+        className="text-white"
+      />
+    </Card>
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,58 +15,51 @@ const navLinks: NavLink[] = [
   { href: '/settings', icon: '⚙️', label: '設定' }
 ];
 
-const styles = {
-  nav: "relative backdrop-blur-sm bg-black/10 border-b border-white/10",
-  container: "container mx-auto px-4 py-3",
-  wrapper: "flex justify-between items-center",
-  logo: "text-2xl font-black tracking-tight",
-  logoText: "bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400",
-  linkContainer: "flex items-center space-x-1",
-  link: (isActive: boolean) => `
-    px-4 py-2 rounded-lg font-medium 
-    transition-all duration-200 ease-in-out
-    transform hover:scale-105
-    ${isActive 
-      ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg' 
-      : 'text-gray-300 hover:text-white hover:bg-white/5'
-    }
-  `,
-  icon: "transform hover:scale-110 transition-transform",
-  gradientLine: "absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent"
-};
-
-const NavLink = ({ href, icon, label }: NavLink) => {
-  const pathname = usePathname();
-  const isActive = pathname === href;
-
-  return (
-    <Link href={href} className={styles.link(isActive)}>
-      <span className="flex items-center space-x-2">
-        <span className={styles.icon}>{icon}</span>
-        <span>{label}</span>
-      </span>
-    </Link>
-  );
-};
-
 export default function Navbar() {
+  const pathname = usePathname();
+
+  const isActive = (href: string) => {
+    if (href === '/') {
+      return pathname === href;
+    }
+    return pathname?.startsWith(href);
+  };
+
   return (
-    <nav className={styles.nav}>
-      <div className={styles.container}>
-        <div className={styles.wrapper}>
-          <Link href="/" className={styles.logo}>
-            <span className={styles.logoText}>
+    <nav className="sticky top-0 z-50 bg-slate-900/95 border-b border-slate-800">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-14">
+          <div className="flex items-center">
+            <Link 
+              href="/" 
+              className="text-xl font-bold text-slate-200 hover:text-white transition-colors"
+            >
               Backtest
-            </span>
-          </Link>
-          <div className={styles.linkContainer}>
-            {navLinks.map((link) => (
-              <NavLink key={link.href} {...link} />
+            </Link>
+          </div>
+          <div className="flex items-center space-x-1">
+            {navLinks.map(({ href, icon, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`
+                  px-3 h-8 flex items-center rounded-md text-sm font-medium
+                  transition-colors
+                  ${isActive(href)
+                    ? 'bg-slate-700 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                  }
+                `}
+              >
+                <span className="flex items-center gap-2">
+                  <span>{icon}</span>
+                  <span>{label}</span>
+                </span>
+              </Link>
             ))}
           </div>
         </div>
       </div>
-      <div className={styles.gradientLine} />
     </nav>
   );
 }

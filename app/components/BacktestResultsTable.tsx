@@ -1,21 +1,21 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   flexRender,
   ColumnDef,
   SortingState,
 } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import debounce from 'lodash/debounce';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
 
-// モックデータの型定義
 interface BacktestResult {
   id: string;
   strategy: string;
@@ -28,7 +28,6 @@ interface BacktestResult {
   status: 'completed' | 'failed';
 }
 
-// モックデータ
 // モックデータ生成
 const generateMockResults = (): BacktestResult[] => {
   const strategies = [
@@ -45,16 +44,9 @@ const generateMockResults = (): BacktestResult[] => {
   ];
 
   const symbols = [
-    'USD/JPY',
-    'EUR/USD',
-    'GBP/JPY',
-    'AUD/USD',
-    'BTC/USD',
-    'ETH/USD',
-    'XRP/USD',
-    'EUR/JPY',
-    'GBP/USD',
-    'CHF/JPY'
+    'USD/JPY', 'EUR/USD', 'GBP/JPY', 'AUD/USD',
+    'BTC/USD', 'ETH/USD', 'XRP/USD', 'EUR/JPY',
+    'GBP/USD', 'CHF/JPY'
   ];
 
   const timeframes = ['1分', '5分', '15分', '30分', '1時間', '4時間', '日足', '週足'];
@@ -86,31 +78,42 @@ export default function BacktestResultsTable() {
   const [results, setResults] = useState<BacktestResult[]>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setResults(generateMockResults());
   }, []);
 
-  const handleRowClick = (id: string) => {
+  const handleRowClick = useCallback((id: string) => {
     router.push(`/results/${id}`);
-  };
+  }, [router]);
+
+  const debouncedSetGlobalFilter = useMemo(
+    () => debounce((value: string) => {
+      setGlobalFilter(value);
+    }, 200),
+    []
+  );
 
   const columns = useMemo<ColumnDef<BacktestResult>[]>(() => [
     {
       accessorKey: 'strategy',
       header: '戦略',
-      cell: (info) => <span className="text-white">{info.getValue() as string}</span>,
+      size: 200,
+      cell: (info) => <span className="text-slate-200">{info.getValue() as string}</span>,
     },
     {
       accessorKey: 'symbol',
       header: '通貨ペア',
-      cell: (info) => <span className="text-white">{info.getValue() as string}</span>,
+      size: 120,
+      cell: (info) => <span className="text-slate-200">{info.getValue() as string}</span>,
     },
     {
       accessorKey: 'period',
       header: '期間',
+      size: 200,
       cell: (info) => (
-        <span className="text-white whitespace-nowrap">
+        <span className="text-slate-200 whitespace-nowrap">
           {info.row.original.startDate} 〜 {info.row.original.endDate}
         </span>
       ),
@@ -118,10 +121,11 @@ export default function BacktestResultsTable() {
     {
       accessorKey: 'profit',
       header: '損益',
+      size: 150,
       cell: (info) => {
         const profit = info.getValue() as number;
         return (
-          <span className={`whitespace-nowrap ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <span className={`whitespace-nowrap ${profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
             {profit >= 0 ? '+' : ''}{profit.toLocaleString()} USD
           </span>
         );
@@ -130,8 +134,9 @@ export default function BacktestResultsTable() {
     {
       accessorKey: 'winRate',
       header: '勝率',
+      size: 100,
       cell: (info) => (
-        <span className="text-white whitespace-nowrap">
+        <span className="text-slate-200 whitespace-nowrap">
           {(info.getValue() as number).toFixed(1)}%
         </span>
       ),
@@ -139,16 +144,17 @@ export default function BacktestResultsTable() {
     {
       accessorKey: 'status',
       header: '状態',
+      size: 100,
       cell: (info) => {
         const status = info.getValue() as 'completed' | 'failed';
         return (
-          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            status === 'completed' 
-              ? 'bg-green-400/10 text-green-400' 
-              : 'bg-red-400/10 text-red-400'
+          <div className={`text-xs font-medium inline-block px-2 py-1 rounded ${
+            status === 'completed'
+              ? 'bg-emerald-400/10 text-emerald-400'
+              : 'bg-rose-400/10 text-rose-400'
           }`}>
             {status === 'completed' ? '完了' : '失敗'}
-          </span>
+          </div>
         );
       },
     },
@@ -160,19 +166,30 @@ export default function BacktestResultsTable() {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     state: {
       sorting,
       globalFilter,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
   });
+
+  const { rows } = table.getRowModel();
+  
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: useCallback(() => 48, []),
+    overscan: 5,
+  });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0].start || 0 : 0;
+  const paddingBottom =
+    virtualRows.length > 0
+      ? totalSize - (virtualRows[virtualRows.length - 1]?.end || 0)
+      : 0;
 
   return (
     <div className="space-y-4">
@@ -181,104 +198,115 @@ export default function BacktestResultsTable() {
         <input
           type="text"
           value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
+          onChange={(e) => debouncedSetGlobalFilter(e.target.value)}
           placeholder="検索..."
-          className="w-full px-4 py-2 pl-10 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+          className="w-full h-10 pl-10 pr-4 bg-slate-800 border-0 rounded-lg text-slate-200 placeholder-slate-400 focus:ring-1 focus:ring-slate-600"
         />
-        <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-white/40" />
+        <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
       </div>
 
       {/* テーブル */}
-      <div className="overflow-hidden rounded-xl bg-white/10 backdrop-blur-sm shadow-xl">
-        <table className="min-w-full">
-          <thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="border-b border-white/20">
-                {headerGroup.headers.map((header) => (
-                  <th
-                    key={header.id}
-                    onClick={header.column.getToggleSortingHandler()}
-                    className={`px-6 py-4 text-left text-sm font-semibold text-white ${
-                      header.column.getCanSort() ? 'cursor-pointer select-none' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      {{
-                        asc: <ArrowUpIcon className="h-4 w-4" />,
-                        desc: <ArrowDownIcon className="h-4 w-4" />,
-                      }[header.column.getIsSorted() as string] ?? null}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr
-                key={row.id}
-                onClick={() => handleRowClick(row.original.id)}
-                className="border-b border-white/10 hover:bg-white/5 cursor-pointer transition-colors"
+      <div className="bg-slate-800 rounded-lg shadow overflow-hidden">
+        {/* ヘッダー */}
+        <div className="border-b border-slate-700">
+          {table.getHeaderGroups().map((headerGroup) => (
+            <div key={headerGroup.id} className="flex">
+              {headerGroup.headers.map((header) => (
+                <div
+                  key={header.id}
+                  onClick={header.column.getToggleSortingHandler()}
+                  className={`px-4 h-12 flex items-center text-sm font-medium text-slate-200 ${
+                    header.column.getCanSort() ? 'cursor-pointer select-none hover:bg-slate-700/50' : ''
+                  }`}
+                  style={{
+                    width: header.getSize(),
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                    {{
+                      asc: <ArrowUpIcon className="h-4 w-4 text-slate-400" />,
+                      desc: <ArrowDownIcon className="h-4 w-4 text-slate-400" />,
+                    }[header.column.getIsSorted() as string] ?? null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        {/* ボディ */}
+        <div
+          ref={tableContainerRef}
+          className="overflow-auto"
+          style={{ height: '480px' }}
+        >
+          {rows.length === 0 ? (
+            <div className="flex items-center justify-center h-32 text-slate-400">
+              データが見つかりません
+            </div>
+          ) : (
+            <div
+              style={{
+                height: `${totalSize}px`,
+                position: 'relative',
+              }}
+            >
+              <div
+                style={{
+                  paddingTop: `${paddingTop}px`,
+                  paddingBottom: `${paddingBottom}px`,
+                }}
               >
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-6 py-4 text-sm">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                {virtualRows.map((virtualRow) => {
+                  const row = rows[virtualRow.index];
+                  return (
+                    <div
+                      key={row.id}
+                      onClick={() => handleRowClick(row.original.id)}
+                      className="absolute top-0 left-0 flex w-full border-b border-slate-700/50 hover:bg-slate-700/50 cursor-pointer"
+                      style={{
+                        height: '48px',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <div
+                          key={cell.id}
+                          className="flex items-center px-4"
+                          style={{
+                            width: cell.column.getSize(),
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* ページネーション */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-lg">
-        <div className="flex items-center gap-4 text-sm text-white">
-          <span className="flex items-center gap-2">
-            <span className="text-white/60">全</span>
-            <span className="font-medium">{table.getFilteredRowModel().rows.length}</span>
-            <span className="text-white/60">件</span>
-            {globalFilter && (
-              <>
-                <span className="text-white/60">（検索結果：全</span>
-                <span className="font-medium">{results.length}</span>
-                <span className="text-white/60">件中）</span>
-              </>
-            )}
-          </span>
-          <span className="text-white/60">|</span>
-          <span>
-            {table.getState().pagination.pageIndex + 1} / {table.getPageCount()} ページ
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className={`px-3 py-1 rounded-md text-sm ${
-              table.getCanPreviousPage()
-                ? 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
-                : 'bg-white/5 text-white/40 cursor-not-allowed'
-            }`}
-          >
-            前へ
-          </button>
-          <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className={`px-3 py-1 rounded-md text-sm ${
-              table.getCanNextPage()
-                ? 'bg-purple-500/20 text-purple-300 hover:bg-purple-500/30'
-                : 'bg-white/5 text-white/40 cursor-not-allowed'
-            }`}
-          >
-            次へ
-          </button>
-        </div>
+      {/* ステータスバー */}
+      <div className="bg-slate-800 rounded-lg px-4 h-10 flex items-center text-sm text-slate-400">
+        <span className="flex items-center gap-2">
+          <span>全</span>
+          <span className="font-medium text-slate-200">{table.getFilteredRowModel().rows.length}</span>
+          <span>件</span>
+          {globalFilter && (
+            <>
+              <span>（検索結果：全</span>
+              <span className="font-medium text-slate-200">{results.length}</span>
+              <span>件中）</span>
+            </>
+          )}
+        </span>
       </div>
     </div>
   );
