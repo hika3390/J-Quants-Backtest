@@ -145,7 +145,7 @@ const FundSettings = memo(() => (
 FundSettings.displayName = 'FundSettings';
 
 // 条件設定フォーム
-const ConditionForm = memo(({ type }: { type: TabType }) => {
+const ConditionForm = memo(({}: { type: TabType }) => {
   const [selectedIndicator, setSelectedIndicator] = useState('');
   const indicator = indicators.find(ind => ind.id === selectedIndicator);
 

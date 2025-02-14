@@ -2,7 +2,6 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -15,8 +14,6 @@ interface PageLayoutProps {
 }
 
 export function PageLayout({ children, title, subtitle, backLink }: PageLayoutProps) {
-  const pathname = usePathname();
-
   return (
     <main className="min-h-screen bg-slate-900">
       {/* 軽量化したグラデーション背景 */}
