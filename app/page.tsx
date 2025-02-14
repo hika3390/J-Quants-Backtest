@@ -1,5 +1,5 @@
 import { PageLayout } from './components/PageLayout';
-import BacktestSettings from './components/BacktestSettings';
+import BacktestSettings from './components/backtest/Settings';
 
 // カスタムタイトル
 function HomeTitle() {
