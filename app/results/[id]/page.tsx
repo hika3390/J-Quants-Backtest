@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { PageLayout } from '@/app/components/PageLayout';
 import {
   BasicInfoCard,
@@ -6,17 +5,6 @@ import {
   TradeStatsCard,
   RiskAnalysisCard
 } from '@/app/components/BacktestResultCards';
-
-// ローディングスケルトン
-function ResultSkeleton() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
-      {[...Array(4)].map((_, i) => (
-        <div key={i} className="backdrop-blur-sm bg-white/10 rounded-xl shadow-xl p-6 h-48" />
-      ))}
-    </div>
-  );
-}
 
 async function getBacktestResult(id: string) {
   // 注: 実際のアプリケーションでは、このデータはバックエンドから取得します
@@ -51,14 +39,12 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
         label: "バックテスト一覧に戻る"
       }}
     >
-      <Suspense fallback={<ResultSkeleton />}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <BasicInfoCard result={mockResult} />
-          <PerformanceCard result={mockResult} />
-          <TradeStatsCard result={mockResult} />
-          <RiskAnalysisCard result={mockResult} />
-        </div>
-      </Suspense>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <BasicInfoCard result={mockResult} />
+        <PerformanceCard result={mockResult} />
+        <TradeStatsCard result={mockResult} />
+        <RiskAnalysisCard result={mockResult} />
+      </div>
     </PageLayout>
   );
 }

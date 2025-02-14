@@ -1,17 +1,5 @@
-import { Suspense } from 'react';
 import { PageLayout } from './components/PageLayout';
 import BacktestSettings from './components/BacktestSettings';
-
-// ローディングスケルトン
-function SettingsSkeleton() {
-  return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-pulse">
-      <div className="h-12 bg-white/10 rounded-lg" />
-      <div className="h-48 bg-white/10 rounded-lg" />
-      <div className="h-12 bg-white/10 rounded-lg" />
-    </div>
-  );
-}
 
 // カスタムタイトル
 function HomeTitle() {
@@ -34,13 +22,11 @@ function HomeTitle() {
   );
 }
 
-export default async function Home() {
+export default function Home() {
   return (
     <PageLayout title={<HomeTitle />}>
       <div className="mt-8">
-        <Suspense fallback={<SettingsSkeleton />}>
-          <BacktestSettings />
-        </Suspense>
+        <BacktestSettings />
       </div>
     </PageLayout>
   );
