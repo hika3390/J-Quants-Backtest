@@ -6,7 +6,7 @@ import {
   RiskAnalysisCard
 } from '@/app/components/BacktestResultCards';
 
-export default async function ResultDetailPage({ params }: { params: { id: string } }) {
+export default async function ResultDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // パラメータを待機
   const resolvedParams = await params;
   
