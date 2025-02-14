@@ -1,4 +1,5 @@
-import Link from 'next/link';
+import { Suspense } from 'react';
+import { PageLayout } from '@/app/components/PageLayout';
 import {
   BasicInfoCard,
   PerformanceCard,
@@ -6,13 +7,21 @@ import {
   RiskAnalysisCard
 } from '@/app/components/BacktestResultCards';
 
-export default async function ResultDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // パラメータを待機
-  const resolvedParams = await params;
-  
+// ローディングスケルトン
+function ResultSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-pulse">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="backdrop-blur-sm bg-white/10 rounded-xl shadow-xl p-6 h-48" />
+      ))}
+    </div>
+  );
+}
+
+async function getBacktestResult(id: string) {
   // 注: 実際のアプリケーションでは、このデータはバックエンドから取得します
-  const mockResult = {
-    id: String(resolvedParams.id),
+  return {
+    id: String(id),
     strategy: 'ゴールデンクロス戦略',
     symbol: 'USD/JPY',
     timeframe: '1時間',
@@ -27,37 +36,29 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ i
     averageLoss: -280,
     status: 'completed',
   };
+}
+
+export default async function ResultDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const param = await params;
+  const mockResult = await getBacktestResult(param.id);
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10">
-      <div className="p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <Link 
-              href="/results"
-              className="inline-flex items-center text-white/60 hover:text-white transition-colors gap-2 px-4 py-2 rounded-lg hover:bg-white/5"
-            >
-              <span className="text-lg">←</span>
-              <span>バックテスト一覧に戻る</span>
-            </Link>
-          </div>
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-black tracking-tight text-white/90 mb-4">
-              バックテスト結果
-            </h1>
-            <p className="text-lg text-white/60">
-              {mockResult.strategy} - {mockResult.symbol}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <BasicInfoCard result={mockResult} />
-            <PerformanceCard result={mockResult} />
-            <TradeStatsCard result={mockResult} />
-            <RiskAnalysisCard result={mockResult} />
-          </div>
+    <PageLayout
+      title="バックテスト結果"
+      subtitle={`${mockResult.strategy} - ${mockResult.symbol}`}
+      backLink={{
+        href: "/results",
+        label: "バックテスト一覧に戻る"
+      }}
+    >
+      <Suspense fallback={<ResultSkeleton />}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <BasicInfoCard result={mockResult} />
+          <PerformanceCard result={mockResult} />
+          <TradeStatsCard result={mockResult} />
+          <RiskAnalysisCard result={mockResult} />
         </div>
-      </div>
-    </main>
+      </Suspense>
+    </PageLayout>
   );
 }
