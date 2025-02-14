@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Column,
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
