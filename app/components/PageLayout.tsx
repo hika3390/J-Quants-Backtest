@@ -2,7 +2,6 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 
 interface PageLayoutProps {
   children: ReactNode;
@@ -15,8 +14,6 @@ interface PageLayoutProps {
 }
 
 export function PageLayout({ children, title, subtitle, backLink }: PageLayoutProps) {
-  const pathname = usePathname();
-
   return (
     <main className="relative min-h-screen bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10">
       <div className="p-8">
