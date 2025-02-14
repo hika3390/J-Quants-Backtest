@@ -6,7 +6,7 @@ import TabButton from './TabButton';
 import BasicSettings from './BasicSettings';
 import FundSettings from './FundSettings';
 import ConditionForm from './ConditionForm';
-import { TabType } from '../../types/backtest';
+import { TabType, TAB_LABELS } from '../../types/backtest';
 
 export default function BacktestSettings() {
   const [activeTab, setActiveTab] = useState<TabType>('buy');
@@ -24,7 +24,7 @@ export default function BacktestSettings() {
       <FormSection title="条件式の設定">
         <div className="space-y-4">
           <div className="flex flex-wrap gap-2">
-            {(['buy', 'sell', 'tp', 'sl'] as const).map((tab) => (
+            {(Object.keys(TAB_LABELS) as TabType[]).map((tab) => (
               <TabButton
                 key={tab}
                 tab={tab}
