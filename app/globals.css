@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+}
+
+/* パフォーマンス最適化用のユーティリティクラス */
+.hardware-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
+  will-change: transform;
+}
+
+.transition-optimized {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  will-change: transform, opacity, border-color, background-color, box-shadow;
+}
+
+.gradient-optimized {
+  background-size: 200% auto;
+  transition: background-position 0.3s ease-in-out;
+  will-change: background-position;
+}
+
+.blur-optimized {
+  backdrop-filter: blur(100px);
+  -webkit-backdrop-filter: blur(100px);
+  transform: translateZ(0);
+}
+
+/* アニメーション最適化 */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.95);
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* レスポンシブ最適化 */
+@media (max-width: 640px) {
+  .transition-optimized {
+    transition: none;
+  }
+  
+  .gradient-optimized {
+    transition: none;
+  }
+}
+
+/* ツールチップのスタイル */
+.group:hover .tooltip {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.5rem;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: all 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+/* セレクトボックスのカスタマイズ */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+/* glass-effectのスタイル */
+.glass-effect {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
