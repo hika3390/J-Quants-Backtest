@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, memo } from 'react';
+import LogoutButton from './auth/LogoutButton';
 
 // トグルスイッチコンポーネント
 const ToggleSwitch = memo(({ enabled, onChange, label, description }: {
@@ -95,6 +96,8 @@ export default function SettingsForm() {
           設定を保存
         </button>
       </div>
+
+      <LogoutButton />
     </form>
   );
 }
