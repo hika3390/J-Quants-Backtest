@@ -84,19 +84,19 @@ export default function BacktestResultsTable() {
     {
       accessorKey: 'strategy',
       header: '戦略',
-      size: 200,
+      size: 240,
       cell: (info) => <span className="text-slate-200">{info.getValue() as string}</span>,
     },
     {
       accessorKey: 'symbol',
       header: '通貨ペア',
-      size: 120,
+      size: 140,
       cell: (info) => <span className="text-slate-200">{info.getValue() as string}</span>,
     },
     {
       accessorKey: 'period',
       header: '期間',
-      size: 200,
+      size: 240,
       cell: (info) => (
         <span className="text-slate-200 whitespace-nowrap">
           {info.row.original.startDate} 〜 {info.row.original.endDate}
@@ -106,7 +106,7 @@ export default function BacktestResultsTable() {
     {
       accessorKey: 'profit',
       header: '損益',
-      size: 150,
+      size: 160,
       cell: (info) => {
         const profit = info.getValue() as number;
         return (
@@ -119,7 +119,7 @@ export default function BacktestResultsTable() {
     {
       accessorKey: 'winRate',
       header: '勝率',
-      size: 100,
+      size: 120,
       cell: (info) => (
         <span className="text-slate-200 whitespace-nowrap">
           {(info.getValue() as number).toFixed(1)}%
@@ -129,7 +129,7 @@ export default function BacktestResultsTable() {
     {
       accessorKey: 'status',
       header: '状態',
-      size: 100,
+      size: 120,
       cell: (info) => {
         const status = info.getValue() as 'completed' | 'failed';
         return (
