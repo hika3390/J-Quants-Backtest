@@ -3,108 +3,52 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  --foreground-rgb: 229, 231, 235;
+  --background-rgb: 17, 24, 39;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+  background: rgb(var(--background-rgb));
 }
 
-/* パフォーマンス最適化用のユーティリティクラス */
-.hardware-accelerated {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000;
-  will-change: transform;
+/* 基本的なトランジション */
+.transition-base {
+  transition: all 0.2s ease-out;
 }
 
-.transition-optimized {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-  will-change: transform, opacity, border-color, background-color, box-shadow;
-}
-
-.gradient-optimized {
-  background-size: 200% auto;
-  transition: background-position 0.3s ease-in-out;
-  will-change: background-position;
-}
-
-.blur-optimized {
-  backdrop-filter: blur(100px);
-  -webkit-backdrop-filter: blur(100px);
-  transform: translateZ(0);
-}
-
-/* アニメーション最適化 */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.95);
-  }
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-/* レスポンシブ最適化 */
-@media (max-width: 640px) {
-  .transition-optimized {
-    transition: none;
-  }
-  
-  .gradient-optimized {
-    transition: none;
-  }
-}
-
-/* ツールチップのスタイル */
-.group:hover .tooltip {
-  display: block;
-  opacity: 1;
-  transform: translateY(0);
-}
-
+/* シンプルなツールチップ */
 .tooltip {
   position: absolute;
   top: 100%;
   left: 0;
   margin-top: 0.5rem;
   opacity: 0;
-  transform: translateY(-4px);
-  transition: all 0.2s ease-in-out;
   pointer-events: none;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: rgb(229, 231, 235);
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
 }
 
-/* セレクトボックスのカスタマイズ */
+.group:hover .tooltip {
+  opacity: 1;
+}
+
+/* シンプルなセレクトボックス */
 select {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 0.5rem center;
-  background-repeat: no-repeat;
-  background-size: 1.5em 1.5em;
-  padding-right: 2.5rem;
+  appearance: none;
+  background-color: rgb(17, 24, 39);
+  border: 1px solid rgb(55, 65, 81);
+  border-radius: 0.375rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  color: rgb(229, 231, 235);
 }
 
-/* glass-effectのスタイル */
-.glass-effect {
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+/* シンプルなナビゲーションバー */
+.nav-bar {
+  background-color: rgb(17, 24, 39);
+  border-bottom: 1px solid rgb(55, 65, 81);
+  padding: 1rem;
 }
