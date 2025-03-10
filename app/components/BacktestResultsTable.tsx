@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useReactTable,
@@ -9,109 +9,110 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
-  ColumnDef,
   SortingState,
 } from '@tanstack/react-table';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
 
-interface BacktestResult {
-  id: string;
-  strategy: string;
-  symbol: string;
-  timeframe: string;
-  startDate: string;
-  endDate: string;
-  profit: number;
-  winRate: number;
-  status: 'completed' | 'failed';
-}
+import { BacktestResult } from '@/app/types/backtest';
 
-// モックデータ生成
-const generateMockResults = (): BacktestResult[] => {
-  const strategies = [
-    'ゴールデンクロス戦略', 'RSI逆張り戦略', 'ブレイクアウト戦略',
-    'MACDクロス戦略', 'ボリンジャーバンド戦略', 'トリプルクロス戦略',
-  ];
-
-  const symbols = [
-    'USD/JPY', 'EUR/USD', 'GBP/JPY', 'BTC/USD', 'ETH/USD', 'XRP/USD'
-  ];
-
-  const timeframes = ['1分', '5分', '15分', '30分', '1時間', '4時間', '日足'];
-
-  return Array.from({ length: 50 }, (_, i) => {
-    const startDate = new Date(2024, 0, Math.floor(Math.random() * 30) + 1);
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + Math.floor(Math.random() * 30) + 1);
-
-    const profit = Math.floor(Math.random() * 10000) - 3000;
-    const winRate = 35 + Math.random() * 40;
-
-    return {
-      id: String(i + 1),
-      strategy: strategies[Math.floor(Math.random() * strategies.length)],
-      symbol: symbols[Math.floor(Math.random() * symbols.length)],
-      timeframe: timeframes[Math.floor(Math.random() * timeframes.length)],
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0],
-      profit,
-      winRate,
-      status: profit > 0 && winRate > 50 ? 'completed' : 'failed',
-    };
+const formatValue = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return '-';
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   });
+};
+
+const formatMoney = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return '-';
+  return `¥${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+};
+
+const formatPercent = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return '-';
+  return `${formatValue(value)}%`;
 };
 
 export default function BacktestResultsTable() {
   const router = useRouter();
   const [results, setResults] = useState<BacktestResult[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      try {
+        const response = await fetch('/api/backtest/list');
+        if (!response.ok) {
+          throw new Error('Failed to fetch results');
+        }
+        const data = await response.json();
+        
+        // データの有効性を確認
+        if (!Array.isArray(data)) {
+          console.error('Invalid data format:', data);
+          setResults([]);
+          return;
+        }
+
+        // 必要なプロパティの存在を確認してフィルタリング
+        const validResults = data.filter(result => {
+          const isValid = result && 
+            typeof result.code === 'string' &&
+            typeof result.startDate === 'string' &&
+            typeof result.endDate === 'string' &&
+            typeof result.totalReturn === 'number' &&
+            typeof result.winRate === 'number' &&
+            typeof result.maxDrawdown === 'number' &&
+            typeof result.sharpeRatio === 'number';
+
+          if (!isValid) {
+            console.warn('Invalid result data:', result);
+          }
+          return isValid;
+        });
+
+        setResults(validResults);
+      } catch (err) {
+        setError('バックテスト結果の取得に失敗しました');
+        console.error('Error fetching results:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchResults();
+  }, []);
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  useEffect(() => {
-    setResults(generateMockResults());
-  }, []);
-
-  const handleRowClick = useCallback((id: string) => {
-    router.push(`/results/${id}`);
-  }, [router]);
-
-  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setGlobalFilter(e.target.value);
-  }, []);
-
-  const columns = useMemo<ColumnDef<BacktestResult>[]>(() => [
+  const columns = [
     {
-      accessorKey: 'strategy',
-      header: '戦略',
-      size: 240,
-      cell: (info) => <span className="text-slate-200">{info.getValue() as string}</span>,
-    },
-    {
-      accessorKey: 'symbol',
-      header: '通貨ペア',
-      size: 140,
-      cell: (info) => <span className="text-slate-200">{info.getValue() as string}</span>,
+      accessorKey: 'code',
+      header: '銘柄コード',
+      size: 120,
+      cell: (info: any) => <span className="text-slate-200">{info.getValue() as string}</span>,
     },
     {
       accessorKey: 'period',
       header: '期間',
-      size: 240,
-      cell: (info) => (
+      size: 200,
+      cell: (info: any) => (
         <span className="text-slate-200 whitespace-nowrap">
           {info.row.original.startDate} 〜 {info.row.original.endDate}
         </span>
       ),
     },
     {
-      accessorKey: 'profit',
-      header: '損益',
-      size: 160,
-      cell: (info) => {
-        const profit = info.getValue() as number;
+      accessorKey: 'totalReturn',
+      header: '総リターン',
+      size: 140,
+      cell: (info: any) => {
+        const value = info.getValue() as number;
         return (
-          <span className={`whitespace-nowrap ${profit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-            {profit >= 0 ? '+' : ''}{profit.toLocaleString()} USD
+          <span className={`whitespace-nowrap ${value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {value >= 0 ? '+' : ''}{formatPercent(value)}
           </span>
         );
       },
@@ -120,30 +121,33 @@ export default function BacktestResultsTable() {
       accessorKey: 'winRate',
       header: '勝率',
       size: 120,
-      cell: (info) => (
+      cell: (info: any) => (
         <span className="text-slate-200 whitespace-nowrap">
-          {(info.getValue() as number).toFixed(1)}%
+          {formatPercent(info.getValue() as number)}
         </span>
       ),
     },
     {
-      accessorKey: 'status',
-      header: '状態',
-      size: 120,
-      cell: (info) => {
-        const status = info.getValue() as 'completed' | 'failed';
-        return (
-          <span className={`px-2 py-1 text-xs font-medium rounded ${
-            status === 'completed' 
-              ? 'bg-emerald-400/10 text-emerald-400' 
-              : 'bg-rose-400/10 text-rose-400'
-          }`}>
-            {status === 'completed' ? '完了' : '失敗'}
-          </span>
-        );
-      },
+      accessorKey: 'maxDrawdown',
+      header: '最大ドローダウン',
+      size: 160,
+      cell: (info: any) => (
+        <span className="text-rose-400 whitespace-nowrap">
+          -{formatPercent(info.getValue() as number)}
+        </span>
+      ),
     },
-  ], []);
+    {
+      accessorKey: 'sharpeRatio',
+      header: 'シャープレシオ',
+      size: 140,
+      cell: (info: any) => (
+        <span className="text-slate-200 whitespace-nowrap">
+          {formatValue(info.getValue() as number)}
+        </span>
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data: results,
@@ -172,12 +176,24 @@ export default function BacktestResultsTable() {
         <input
           type="text"
           value={globalFilter}
-          onChange={handleSearch}
+          onChange={(e) => setGlobalFilter(e.target.value)}
           placeholder="検索..."
           className="w-full h-10 pl-10 pr-4 bg-slate-800 border-0 rounded-lg text-slate-200 placeholder-slate-400 focus:ring-1 focus:ring-slate-600"
         />
         <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" />
       </div>
+
+      {isLoading && (
+        <div className="text-center py-8 text-slate-400">
+          データを読み込んでいます...
+        </div>
+      )}
+
+      {error && (
+        <div className="text-center py-8 text-red-500">
+          {error}
+        </div>
+      )}
 
       {/* テーブル */}
       <div className="bg-slate-800 rounded-lg shadow overflow-hidden">
@@ -216,7 +232,7 @@ export default function BacktestResultsTable() {
             {table.getRowModel().rows.map((row) => (
               <div
                 key={row.id}
-                onClick={() => handleRowClick(row.original.id)}
+                onClick={() => router.push(`/results/${row.original.id}`)}
                 className="flex border-b border-slate-700/50 hover:bg-slate-700/50 cursor-pointer"
               >
                 {row.getVisibleCells().map((cell) => (

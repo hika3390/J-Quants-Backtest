@@ -1,50 +1,222 @@
-import { PageLayout } from '@/app/components/PageLayout';
+'use client';
+
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Line } from 'react-chartjs-2';
+import StockChart from '@/app/components/backtest/StockChart';
+import TradeHistoryTable from '@/app/components/backtest/TradeHistoryTable';
 import {
-  BasicInfoCard,
-  PerformanceCard,
-  TradeStatsCard,
-  RiskAnalysisCard
-} from '@/app/components/BacktestResultCards';
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { BacktestResult as BacktestResultType } from '@/app/types/backtest';
 
-async function getBacktestResult(id: string) {
-  // 注: 実際のアプリケーションでは、このデータはバックエンドから取得します
-  return {
-    id: String(id),
-    strategy: 'ゴールデンクロス戦略',
-    symbol: 'USD/JPY',
-    timeframe: '1時間',
-    startDate: '2024-01-01',
-    endDate: '2024-01-31',
-    profit: 2500,
-    winRate: 65.5,
-    totalTrades: 124,
-    maxDrawdown: -1200,
-    profitFactor: 1.85,
-    averageWin: 450,
-    averageLoss: -280,
-    status: 'completed',
-  };
-}
+// Chart.jsの設定
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
-export default async function ResultDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const param = await params;
-  const mockResult = await getBacktestResult(param.id);
+const formatMoney = (value: number | null | undefined) => {
+  if (value == null) return '-';
+  return `¥${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+};
+
+const formatPercent = (value: number | null | undefined) => {
+  if (value == null) return '-';
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 2 })}%`;
+};
+
+const chartOptions = {
+  responsive: true,
+  plugins: {
+    legend: {
+      position: 'top' as const,
+      labels: {
+        color: '#94a3b8'
+      }
+    },
+    title: {
+      display: true,
+      text: '資金推移',
+      color: '#94a3b8'
+    },
+  },
+  scales: {
+    y: {
+      type: 'linear' as const,
+      beginAtZero: false,
+      grid: {
+        color: '#334155'
+      },
+      ticks: {
+        color: '#94a3b8',
+        callback: function(value: string | number) {
+          return formatMoney(Number(value));
+        },
+      },
+    },
+    x: {
+      grid: {
+        color: '#334155'
+      },
+      ticks: {
+        color: '#94a3b8'
+      }
+    }
+  },
+};
+
+export default function BacktestResult() {
+  const params = useParams();
+  const [result, setResult] = useState<BacktestResultType | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`/api/backtest/store?id=${params.id}`);
+        const json = await response.json();
+
+        if (!response.ok) {
+          throw new Error(json.error || 'データの取得に失敗しました');
+        }
+
+        // レスポンスの型チェック
+        if (!json.data || typeof json.data !== 'object') {
+          throw new Error('無効なデータ形式です');
+        }
+
+        // 必須プロパティの存在チェック
+        const required = [
+          'initialCash',
+          'finalEquity',
+          'totalReturn',
+          'winRate',
+          'maxDrawdown',
+          'sharpeRatio',
+          'trades',
+          'priceData',
+          'dates',
+          'equity',
+        ];
+
+        for (const prop of required) {
+          if (!(prop in json.data)) {
+            throw new Error(`必須プロパティ ${prop} が見つかりません`);
+          }
+        }
+
+        setResult(json.data as BacktestResultType);
+      } catch (err) {
+        console.error('Error fetching result:', err);
+        setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center text-slate-400">
+          データを読み込んでいます...
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !result) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center text-red-500">
+          {error || 'データの取得に失敗しました'}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <PageLayout
-      title="バックテスト結果"
-      subtitle={`${mockResult.strategy} - ${mockResult.symbol}`}
-      backLink={{
-        href: "/results",
-        label: "バックテスト一覧に戻る"
-      }}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <BasicInfoCard result={mockResult} />
-        <PerformanceCard result={mockResult} />
-        <TradeStatsCard result={mockResult} />
-        <RiskAnalysisCard result={mockResult} />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-8">バックテスト結果</h1>
+      
+      {/* パフォーマンス指標 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="bg-slate-800 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">収益性</h3>
+          <div className="space-y-2">
+            <p>初期資金: {formatMoney(result.initialCash)}</p>
+            <p>最終残高: {formatMoney(result.finalEquity)}</p>
+            <p>総リターン: {formatPercent(result.totalReturn)}</p>
+          </div>
+        </div>
+        
+        <div className="bg-slate-800 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">トレード統計</h3>
+          <div className="space-y-2">
+            <p>取引回数: {result.trades?.length || 0}回</p>
+            <p>勝率: {formatPercent(result.winRate)}</p>
+            <p>最大ドローダウン: {formatPercent(result.maxDrawdown)}</p>
+          </div>
+        </div>
+        
+        <div className="bg-slate-800 p-4 rounded-lg">
+          <h3 className="text-lg font-semibold mb-2">リスク指標</h3>
+          <div className="space-y-2">
+            <p>シャープレシオ: {result.sharpeRatio?.toFixed(2) || '-'}</p>
+          </div>
+        </div>
       </div>
-    </PageLayout>
+
+      {/* 株価チャート */}
+      <div className="bg-slate-800 p-4 rounded-lg mb-8">
+        <h3 className="text-lg font-semibold mb-4">株価チャート</h3>
+        <StockChart 
+          data={result.priceData}
+          trades={result.trades}
+          rsiPeriod={result.rsiPeriod}
+        />
+      </div>
+
+      {/* トレード履歴 */}
+      <div className="bg-slate-800 p-4 rounded-lg mb-8">
+        <h3 className="text-lg font-semibold mb-4">トレード履歴</h3>
+        <TradeHistoryTable trades={result.trades} />
+      </div>
+      
+      {/* 資金推移チャート */}
+      <div className="bg-slate-800 p-4 rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">資金推移</h3>
+        <Line 
+          options={chartOptions} 
+          data={{
+            labels: result.dates,
+            datasets: [
+              {
+                label: '口座残高',
+                data: result.equity,
+                borderColor: 'rgb(99, 102, 241)',
+                tension: 0.1,
+              },
+            ],
+          }} 
+        />
+      </div>
+    </div>
   );
 }
