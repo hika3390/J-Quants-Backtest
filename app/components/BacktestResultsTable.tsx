@@ -62,6 +62,7 @@ export default function BacktestResultsTable() {
             typeof result.code === 'string' &&
             typeof result.startDate === 'string' &&
             typeof result.endDate === 'string' &&
+            typeof result.executedAt === 'string' &&
             typeof result.totalReturn === 'number' &&
             typeof result.winRate === 'number' &&
             typeof result.maxDrawdown === 'number' &&
@@ -87,7 +88,29 @@ export default function BacktestResultsTable() {
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
 
+  const formatDateTime = (dateStr: string) => {
+    return new Date(dateStr).toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZone: 'Asia/Tokyo'
+    });
+  };
+
   const columns = [
+    {
+      accessorKey: 'executedAt',
+      header: '実行日時',
+      size: 180,
+      cell: (info: any) => (
+        <span className="text-slate-200 whitespace-nowrap">
+          {formatDateTime(info.getValue() as string)}
+        </span>
+      ),
+    },
     {
       accessorKey: 'code',
       header: '銘柄コード',
@@ -166,6 +189,9 @@ export default function BacktestResultsTable() {
       pagination: {
         pageSize: 10,
       },
+      sorting: [
+        { id: 'executedAt', desc: true } // 実行日時の降順（新しい順）でソート
+      ]
     },
   });
 

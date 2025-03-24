@@ -13,10 +13,17 @@ import {
   Legend,
 } from 'recharts';
 
+import { Condition } from '@/app/types/backtest';
+
 interface StockChartProps {
   data: DailyQuote[];
   trades?: Trade[];
-  rsiPeriod?: number;
+  conditions?: {
+    buy: Condition[];
+    sell: Condition[];
+    tp: Condition[];
+    sl: Condition[];
+  };
 }
 
 interface ChartData extends DailyQuote {
@@ -24,7 +31,12 @@ interface ChartData extends DailyQuote {
   signal?: 'buy' | 'sell';
 }
 
-export default function StockChart({ data, trades = [], rsiPeriod = 14 }: StockChartProps) {
+export default function StockChart({ data, trades = [], conditions }: StockChartProps) {
+  // RSI設定を取得
+  const rsiCondition = conditions?.buy?.find(c => c.indicator === 'rsi') ||
+                      conditions?.sell?.find(c => c.indicator === 'rsi');
+  const rsiPeriod = rsiCondition?.period || 14;
+  
   // RSIを計算
   const rsiValues = calculateRSI(data, rsiPeriod);
 

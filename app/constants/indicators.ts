@@ -2,6 +2,19 @@ import { IndicatorType } from '../types/backtest';
 
 export const indicators: IndicatorType[] = [
   {
+    id: 'ma',
+    name: '移動平均線 (MA)',
+    description: 'トレンドを判断するための指標',
+    defaultPeriod: 20,
+    parameters: [
+      { 
+        name: 'タイプ',
+        type: 'string',
+        default: 'SMA'
+      }
+    ]
+  },
+  {
     id: 'rsi',
     name: 'RSI (相対力指数)',
     description: '買われ過ぎ・売られ過ぎを判断',

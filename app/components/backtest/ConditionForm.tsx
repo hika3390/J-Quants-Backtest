@@ -3,11 +3,14 @@
 import { memo, useState, useEffect } from 'react';
 import { FormField } from '../common/FormComponents';
 import { TabType } from '../../types/backtest';
+import { indicators } from '@/app/constants/indicators';
+import RSISettings, { RSISettingsData } from './RSISettings';
+import MASettings, { MASettingsData } from './MASettings';
 
 interface Condition {
   indicator: string;
   period: number;
-  params: Record<string, number>;
+  params: Record<string, number | string>;
 }
 
 interface ConditionFormProps {
@@ -17,26 +20,45 @@ interface ConditionFormProps {
 }
 
 const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps) => {
-  const [period, setPeriod] = useState<number>(currentValue?.period || 14);
-  const [threshold, setThreshold] = useState<number>(
-    currentValue?.params['標準偏差'] || (type === 'buy' ? 30 : 70)
+  const [selectedIndicator, setSelectedIndicator] = useState<string>(
+    currentValue?.indicator || 'rsi'
   );
 
-  // 外部から値が更新された場合に反映
-  useEffect(() => {
-    if (currentValue) {
-      setPeriod(currentValue.period);
-      setThreshold(currentValue.params['標準偏差']);
+  // インジケーター選択が変更されたときの処理
+  const handleIndicatorChange = (indicatorId: string) => {
+    setSelectedIndicator(indicatorId);
+    // デフォルト値で新しい条件を作成
+    const indicator = indicators.find(i => i.id === indicatorId);
+    if (indicator) {
+      const defaultCondition: Condition = {
+        indicator: indicatorId,
+        period: indicator.defaultPeriod,
+        params: {}
+      };
+      onChange(defaultCondition);
     }
-  }, [currentValue]);
+  };
 
-  // 値が変更されたときに親コンポーネントに通知
-  const handleChange = () => {
+  // RSI設定が変更されたときの処理
+  const handleRSIChange = (settings: RSISettingsData) => {
     const condition: Condition = {
       indicator: 'rsi',
-      period,
+      period: settings.period,
       params: {
-        '標準偏差': threshold
+        'overboughtThreshold': settings.overboughtThreshold,
+        'oversoldThreshold': settings.oversoldThreshold
+      }
+    };
+    onChange(condition);
+  };
+
+  // MA設定が変更されたときの処理
+  const handleMAChange = (settings: MASettingsData) => {
+    const condition: Condition = {
+      indicator: 'ma',
+      period: settings.period,
+      params: {
+        'type': settings.type
       }
     };
     onChange(condition);
@@ -44,44 +66,31 @@ const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField label="RSI期間">
-          <input
-            type="number"
-            value={period}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              if (!isNaN(value) && value > 0) {
-                setPeriod(value);
-                handleChange();
-              }
-            }}
-            min="1"
-            className="w-full h-10 px-3 bg-slate-700 rounded text-slate-200 border-0 focus:ring-1 focus:ring-slate-500 appearance-none"
-          />
-        </FormField>
-        <FormField label={type === 'buy' ? 'RSI下限（売られ過ぎ）' : 'RSI上限（買われ過ぎ）'}>
-          <input
-            type="number"
-            value={threshold}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              if (!isNaN(value) && value >= 0 && value <= 100) {
-                setThreshold(value);
-                handleChange();
-              }
-            }}
-            min="0"
-            max="100"
-            className="w-full h-10 px-3 bg-slate-700 rounded text-slate-200 border-0 focus:ring-1 focus:ring-slate-500 appearance-none"
-          />
-        </FormField>
-      </div>
-      <div className="text-sm text-slate-400">
-        {type === 'buy' 
-          ? 'RSIが下限値以下になったとき買い注文を出します' 
-          : 'RSIが上限値以上になったとき売り注文を出します'}
-      </div>
+      <FormField label="インジケーター">
+        <select
+          value={selectedIndicator}
+          onChange={(e) => handleIndicatorChange(e.target.value)}
+          className="w-full h-10 px-3 bg-slate-700 rounded text-slate-200 border-0 focus:ring-1 focus:ring-slate-500 appearance-none"
+        >
+          {indicators.map((indicator) => (
+            <option key={indicator.id} value={indicator.id}>
+              {indicator.name}
+            </option>
+          ))}
+        </select>
+      </FormField>
+
+      {selectedIndicator === 'rsi' && (
+        <RSISettings
+          onChange={handleRSIChange}
+        />
+      )}
+
+      {selectedIndicator === 'ma' && (
+        <MASettings
+          onChange={handleMAChange}
+        />
+      )}
     </div>
   );
 });

@@ -42,6 +42,7 @@ export interface BacktestResult {
   code: string;
   startDate: string;
   endDate: string;
+  executedAt: string; // バックテスト実行日時
   initialCash: number;
   trades: Trade[];
   finalEquity: number;
@@ -53,6 +54,11 @@ export interface BacktestResult {
   priceData: DailyQuote[];
   dates: string[];
   equity: number[];
-  // RSI設定
-  rsiPeriod: number;
+  // インジケーター設定
+  conditions: {
+    buy: Condition[];
+    sell: Condition[];
+    tp: Condition[];
+    sl: Condition[];
+  };
 }

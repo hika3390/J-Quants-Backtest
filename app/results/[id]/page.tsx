@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import StockChart from '@/app/components/backtest/StockChart';
 import TradeHistoryTable from '@/app/components/backtest/TradeHistoryTable';
+import { TabType, TAB_LABELS } from '@/app/types/backtest';
+import { indicators } from '@/app/constants/indicators';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -153,7 +155,20 @@ export default function BacktestResult() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-8">バックテスト結果</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold">バックテスト結果</h1>
+        <p className="text-slate-400">
+          実行日時: {new Date(result.executedAt).toLocaleString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone: 'Asia/Tokyo'
+          })}
+        </p>
+      </div>
       
       {/* パフォーマンス指標 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -189,8 +204,50 @@ export default function BacktestResult() {
         <StockChart 
           data={result.priceData}
           trades={result.trades}
-          rsiPeriod={result.rsiPeriod}
+          conditions={result.conditions || {
+            buy: [],
+            sell: [],
+            tp: [],
+            sl: []
+          }}
         />
+      </div>
+
+      {/* インジケーター設定 */}
+      <div className="bg-slate-800 p-4 rounded-lg mb-8">
+        <h3 className="text-lg font-semibold mb-4">インジケーター設定</h3>
+        {result.conditions ? (
+          ['buy', 'sell', 'tp', 'sl'].map((type) => {
+            const conditions = result.conditions[type as keyof typeof result.conditions];
+            if (!conditions || conditions.length === 0) return null;
+
+            return (
+              <div key={type} className="mb-4">
+                <h4 className="text-md font-medium mb-2">{TAB_LABELS[type as TabType]}</h4>
+                <div className="space-y-2">
+                  {conditions.map((condition, index) => {
+                    const indicator = indicators.find(i => i.id === condition.indicator);
+                    if (!indicator) return null;
+
+                    return (
+                      <div key={index} className="pl-4 border-l-2 border-slate-700">
+                        <p className="text-slate-200">{indicator.name}</p>
+                        <p className="text-sm text-slate-400">期間: {condition.period}</p>
+                        {condition.params && Object.entries(condition.params).map(([key, value]) => (
+                          <p key={key} className="text-sm text-slate-400">
+                            {key}: {value}
+                          </p>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <p className="text-slate-400">インジケーター設定はありません</p>
+        )}
       </div>
 
       {/* トレード履歴 */}

@@ -39,31 +39,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // RSIの条件を検証
+    // トレード条件を検証
     const { buy: buyCondition, sell: sellCondition } = conditions;
     console.log('Trading conditions:', { buyCondition, sellCondition }); // デバッグログ
 
     if (!buyCondition?.indicator || !sellCondition?.indicator) {
       return NextResponse.json(
-        { error: 'RSIの買い条件と売り条件を設定してください' },
+        { error: '買い条件と売り条件を設定してください' },
         { status: 400 }
       );
     }
 
-    if (buyCondition.indicator !== 'rsi' || sellCondition.indicator !== 'rsi') {
-      return NextResponse.json(
-        { error: 'RSIインジケーターを選択してください' },
-        { status: 400 }
-      );
-    }
-
-    // RSIのパラメータを取得
+    // エンジンパラメータを構築
     const engineParams = {
       initialCash: Number(initialCash),
       maxPosition: Number(maxPosition),
-      rsiPeriod: buyCondition.period || 14,
-      overboughtThreshold: sellCondition.params['標準偏差'] || 70,
-      oversoldThreshold: buyCondition.params['標準偏差'] || 30
+      indicator: buyCondition.indicator,
+      period: buyCondition.period,
+      params: buyCondition.params
     };
 
     console.log('Engine parameters:', engineParams); // デバッグログ
@@ -80,9 +73,15 @@ export async function POST(request: NextRequest) {
       code: body.code,
       startDate: body.startDate,
       endDate: body.endDate,
+      executedAt: new Date().toISOString(),
       priceData: body.priceData,
       dates: body.priceData.map(d => d.Date),
-      rsiPeriod: buyCondition.period
+      conditions: {
+        buy: [buyCondition],
+        sell: [sellCondition],
+        tp: conditions.tp ? [conditions.tp] : [],
+        sl: conditions.sl ? [conditions.sl] : []
+      }
     };
 
     return NextResponse.json(response);

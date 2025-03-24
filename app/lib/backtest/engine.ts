@@ -1,12 +1,43 @@
 import { DailyQuote } from '../jquants/api';
 import { calculateRSI, generateRSISignals } from '../indicators/rsi';
+import { calculateMA, calculateEMA } from '../indicators/ma';
 
 interface BacktestParameters {
   initialCash: number;
   maxPosition: number;
-  rsiPeriod: number;
-  overboughtThreshold: number;
-  oversoldThreshold: number;
+  indicator: string;
+  period: number;
+  params: Record<string, number | string>;
+}
+
+interface MASignalParams {
+  type: 'SMA' | 'EMA';
+  period: number;
+}
+
+function generateMASignals(prices: number[], params: MASignalParams): number[] {
+  const signals: number[] = [];
+  const maValues = params.type === 'SMA' 
+    ? calculateMA(prices, params.period)
+    : calculateEMA(prices, params.period);
+
+  // 最初のperiod日分はシグナルなし
+  for (let i = 0; i < params.period; i++) {
+    signals.push(0);
+  }
+
+  // 価格がMAを上回ったら買い、下回ったら売り
+  for (let i = params.period; i < prices.length; i++) {
+    if (prices[i] > maValues[i]) {
+      signals.push(1);  // 買いシグナル
+    } else if (prices[i] < maValues[i]) {
+      signals.push(-1); // 売りシグナル
+    } else {
+      signals.push(0);  // シグナルなし
+    }
+  }
+
+  return signals;
 }
 
 interface Position {
@@ -59,13 +90,31 @@ export class BacktestEngine {
    * バックテストを実行
    */
   public run(): BacktestResult {
-    // RSIを計算
-    const rsiValues = calculateRSI(this.quotes, this.params.rsiPeriod);
-    const signals = generateRSISignals(
-      rsiValues,
-      this.params.overboughtThreshold,
-      this.params.oversoldThreshold
-    );
+    // 価格データを配列に変換
+    const prices = this.quotes.map(q => q.Close);
+    let signals: number[];
+
+    // インジケーターに応じてシグナルを生成
+    switch (this.params.indicator) {
+      case 'rsi': {
+        const rsiValues = calculateRSI(this.quotes, this.params.period);
+        signals = generateRSISignals(
+          rsiValues,
+          this.params.params.overboughtThreshold as number,
+          this.params.params.oversoldThreshold as number
+        );
+        break;
+      }
+      case 'ma': {
+        signals = generateMASignals(prices, {
+          type: this.params.params.type as 'SMA' | 'EMA',
+          period: this.params.period
+        });
+        break;
+      }
+      default:
+        throw new Error(`未対応のインジケーター: ${this.params.indicator}`);
+    }
 
     // 各日の価格でシミュレーション
     for (let i = 0; i < this.quotes.length; i++) {
