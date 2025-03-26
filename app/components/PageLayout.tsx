@@ -15,7 +15,7 @@ interface PageLayoutProps {
 
 export function PageLayout({ children, title, subtitle, backLink }: PageLayoutProps) {
   return (
-    <main className="min-h-screen bg-slate-900">
+    <main>
       {/* 軽量化したグラデーション背景 */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-from)_0%,_transparent_35%)] from-indigo-500/20" />
       
@@ -39,7 +39,11 @@ export function PageLayout({ children, title, subtitle, backLink }: PageLayoutPr
             <div className="text-center">
               <div className="mb-4">
                 {typeof title === 'string' ? (
-                  <h1 className="text-3xl font-bold text-white">{title}</h1>
+                  <h1 className="text-4xl font-bold">
+                    <span className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-[length:200%_auto] animate-[gradientShift_3s_ease-in-out_infinite] bg-clip-text text-transparent">
+                      {title}
+                    </span>
+                  </h1>
                 ) : (
                   title
                 )}
