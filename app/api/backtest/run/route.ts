@@ -68,14 +68,22 @@ export async function POST(request: NextRequest) {
     const result = engine.run();
 
     // バックテスト結果に追加情報を含める
+    // 指定された期間のデータを確実に含める
+    const filteredPriceData = body.priceData.filter(d => {
+      const date = new Date(d.Date);
+      const start = new Date(body.startDate);
+      const end = new Date(body.endDate);
+      return date >= start && date <= end;
+    });
+
     const response = {
       ...result,
       code: body.code,
       startDate: body.startDate,
       endDate: body.endDate,
       executedAt: new Date().toISOString(),
-      priceData: body.priceData,
-      dates: body.priceData.map(d => d.Date),
+      priceData: filteredPriceData,
+      dates: filteredPriceData.map(d => d.Date),
       conditions: {
         buy: [buyCondition],
         sell: [sellCondition],

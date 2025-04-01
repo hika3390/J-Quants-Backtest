@@ -2,10 +2,19 @@
 
 import { memo } from 'react';
 
-export const FormField = memo(({ label, children }: { label: string; children: React.ReactNode }) => (
+interface FormFieldProps {
+  label: string;
+  children: React.ReactNode;
+  error?: string;
+}
+
+export const FormField = memo(({ label, children, error }: FormFieldProps) => (
   <div>
     <label className="block mb-2 text-sm font-medium text-slate-300">{label}</label>
     {children}
+    {error && (
+      <p className="mt-1 text-sm text-red-500">{error}</p>
+    )}
   </div>
 ));
 
