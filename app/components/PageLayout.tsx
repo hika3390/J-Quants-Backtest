@@ -21,7 +21,7 @@ export function PageLayout({ children, title, subtitle, backLink }: PageLayoutPr
       
       <div className="relative">
         <div className="p-8">
-          <div className="max-w-4xl mx-auto space-y-8">
+          <div className="max-w-6xl mx-auto space-y-8">
             {/* 戻るリンク */}
             {backLink && (
               <div>

@@ -23,12 +23,12 @@ export default function BacktestSettings() {
     buy: {
       indicator: 'rsi',
       period: 14,
-      params: { '標準偏差': 30 }
+      params: { overboughtThreshold: 70, oversoldThreshold: 30 }
     },
     sell: {
       indicator: 'rsi',
       period: 14,
-      params: { '標準偏差': 70 }
+      params: { overboughtThreshold: 70, oversoldThreshold: 30 }
     }
   });
 

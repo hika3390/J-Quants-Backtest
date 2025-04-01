@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import StockChart from '@/app/components/backtest/StockChart';
 import TradeHistoryTable from '@/app/components/backtest/TradeHistoryTable';
-import { TabType, TAB_LABELS } from '@/app/types/backtest';
 import { indicators } from '@/app/constants/indicators';
 import {
   Chart as ChartJS,
