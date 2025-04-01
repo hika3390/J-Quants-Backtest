@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 interface RSISettingsProps {
   onChange: (settings: RSISettingsData) => void;
 }
@@ -11,15 +13,23 @@ export interface RSISettingsData {
 }
 
 export default function RSISettings({ onChange }: RSISettingsProps) {
+  const [settings, setSettings] = useState<RSISettingsData>({
+    period: 14,
+    overboughtThreshold: 70,
+    oversoldThreshold: 30,
+  });
+
   const handleChange = (field: keyof RSISettingsData, value: string) => {
     const numValue = parseInt(value, 10);
     if (isNaN(numValue)) return;
 
-    onChange({
-      period: field === 'period' ? numValue : 14,
-      overboughtThreshold: field === 'overboughtThreshold' ? numValue : 70,
-      oversoldThreshold: field === 'oversoldThreshold' ? numValue : 30,
-    });
+    const newSettings = {
+      ...settings,
+      [field]: numValue,
+    };
+
+    setSettings(newSettings);
+    onChange(newSettings);
   };
 
   return (
@@ -32,7 +42,7 @@ export default function RSISettings({ onChange }: RSISettingsProps) {
           <input
             type="number"
             min="1"
-            defaultValue="14"
+            value={settings.period}
             onChange={(e) => handleChange('period', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -45,7 +55,7 @@ export default function RSISettings({ onChange }: RSISettingsProps) {
             type="number"
             min="0"
             max="100"
-            defaultValue="70"
+            value={settings.overboughtThreshold}
             onChange={(e) => handleChange('overboughtThreshold', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -58,7 +68,7 @@ export default function RSISettings({ onChange }: RSISettingsProps) {
             type="number"
             min="0"
             max="100"
-            defaultValue="30"
+            value={settings.oversoldThreshold}
             onChange={(e) => handleChange('oversoldThreshold', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />

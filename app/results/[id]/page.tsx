@@ -217,15 +217,13 @@ export default function BacktestResult() {
       <div className="bg-slate-800 p-4 rounded-lg mb-8">
         <h3 className="text-lg font-semibold mb-4">インジケーター設定</h3>
         {result.conditions ? (
-          ['buy', 'sell', 'tp', 'sl'].map((type) => {
-            const conditions = result.conditions[type as keyof typeof result.conditions];
-            if (!conditions || conditions.length === 0) return null;
-
-            return (
-              <div key={type} className="mb-4">
-                <h4 className="text-md font-medium mb-2">{TAB_LABELS[type as TabType]}</h4>
-                <div className="space-y-2">
-                  {conditions.map((condition, index) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 買い条件 */}
+            <div className="border-r border-slate-700 pr-4">
+              <h4 className="text-md font-medium mb-4">買い条件</h4>
+              {result.conditions.buy && result.conditions.buy.length > 0 ? (
+                <div className="space-y-4">
+                  {result.conditions.buy.map((condition, index) => {
                     const indicator = indicators.find(i => i.id === condition.indicator);
                     if (!indicator) return null;
 
@@ -242,9 +240,88 @@ export default function BacktestResult() {
                     );
                   })}
                 </div>
-              </div>
-            );
-          })
+              ) : (
+                <p className="text-slate-400">買い条件が設定されていません</p>
+              )}
+
+              {/* 利確条件 */}
+              {result.conditions.tp && result.conditions.tp.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="text-sm font-medium mb-2 text-slate-400">利確条件</h5>
+                  <div className="space-y-2">
+                    {result.conditions.tp.map((condition, index) => {
+                      const indicator = indicators.find(i => i.id === condition.indicator);
+                      if (!indicator) return null;
+
+                      return (
+                        <div key={index} className="pl-4 border-l-2 border-slate-700">
+                          <p className="text-slate-200">{indicator.name}</p>
+                          <p className="text-sm text-slate-400">期間: {condition.period}</p>
+                          {condition.params && Object.entries(condition.params).map(([key, value]) => (
+                            <p key={key} className="text-sm text-slate-400">
+                              {key}: {value}
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 売り条件 */}
+            <div className="pl-4">
+              <h4 className="text-md font-medium mb-4">売り条件</h4>
+              {result.conditions.sell && result.conditions.sell.length > 0 ? (
+                <div className="space-y-4">
+                  {result.conditions.sell.map((condition, index) => {
+                    const indicator = indicators.find(i => i.id === condition.indicator);
+                    if (!indicator) return null;
+
+                    return (
+                      <div key={index} className="pl-4 border-l-2 border-slate-700">
+                        <p className="text-slate-200">{indicator.name}</p>
+                        <p className="text-sm text-slate-400">期間: {condition.period}</p>
+                        {condition.params && Object.entries(condition.params).map(([key, value]) => (
+                          <p key={key} className="text-sm text-slate-400">
+                            {key}: {value}
+                          </p>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-slate-400">売り条件が設定されていません</p>
+              )}
+
+              {/* 損切り条件 */}
+              {result.conditions.sl && result.conditions.sl.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="text-sm font-medium mb-2 text-slate-400">損切り条件</h5>
+                  <div className="space-y-2">
+                    {result.conditions.sl.map((condition, index) => {
+                      const indicator = indicators.find(i => i.id === condition.indicator);
+                      if (!indicator) return null;
+
+                      return (
+                        <div key={index} className="pl-4 border-l-2 border-slate-700">
+                          <p className="text-slate-200">{indicator.name}</p>
+                          <p className="text-sm text-slate-400">期間: {condition.period}</p>
+                          {condition.params && Object.entries(condition.params).map(([key, value]) => (
+                            <p key={key} className="text-sm text-slate-400">
+                              {key}: {value}
+                            </p>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         ) : (
           <p className="text-slate-400">インジケーター設定はありません</p>
         )}
