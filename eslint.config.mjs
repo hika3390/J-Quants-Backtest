@@ -14,6 +14,7 @@ const eslintConfig = [
   {
     rules: {
       'no-var': 'off', // no-varルールをオフにする
+      '@typescript-eslint/no-unused-vars'  : 'off', // no-unused-varsルールをオフにする
       '@typescript-eslint/no-explicit-any': 'off', // any型の使用を許可する
     },
   },

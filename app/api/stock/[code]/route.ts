@@ -3,7 +3,7 @@ import JQuantsApi from '@/app/lib/jquants/api';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  {params}: { params: Promise<{code: string }> }
 ) {
   try {
     const searchParams = request.nextUrl.searchParams;
