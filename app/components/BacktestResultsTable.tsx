@@ -24,14 +24,21 @@ const formatValue = (value: number | null | undefined) => {
   });
 };
 
-const formatMoney = (value: number | null | undefined) => {
-  if (value === null || value === undefined) return '-';
-  return `¥${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-};
-
 const formatPercent = (value: number | null | undefined) => {
   if (value === null || value === undefined) return '-';
   return `${formatValue(value)}%`;
+};
+
+const formatDateTime = (dateStr: string) => {
+  return new Date(dateStr).toLocaleString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'Asia/Tokyo'
+  });
 };
 
 export default function BacktestResultsTable() {
@@ -39,65 +46,49 @@ export default function BacktestResultsTable() {
   const [results, setResults] = useState<BacktestResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchResults = async () => {
-      try {
-        const response = await fetch('/api/backtest/list');
-        if (!response.ok) {
-          throw new Error('Failed to fetch results');
-        }
-        const data = await response.json();
-        
-        // データの有効性を確認
-        if (!Array.isArray(data)) {
-          console.error('Invalid data format:', data);
-          setResults([]);
-          return;
-        }
-
-        // 必要なプロパティの存在を確認してフィルタリング
-        const validResults = data.filter(result => {
-          const isValid = result && 
-            typeof result.code === 'string' &&
-            typeof result.startDate === 'string' &&
-            typeof result.endDate === 'string' &&
-            typeof result.executedAt === 'string' &&
-            typeof result.totalReturn === 'number' &&
-            typeof result.winRate === 'number' &&
-            typeof result.maxDrawdown === 'number' &&
-            typeof result.sharpeRatio === 'number';
-
-          if (!isValid) {
-            console.warn('Invalid result data:', result);
-          }
-          return isValid;
-        });
-
-        setResults(validResults);
-      } catch (err) {
-        setError('バックテスト結果の取得に失敗しました');
-        console.error('Error fetching results:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchResults();
-  }, []);
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('ja-JP', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'Asia/Tokyo'
-    });
+  const fetchResults = async () => {
+    try {
+      const response = await fetch('/api/backtest/list');
+      if (!response.ok) {
+        throw new Error('Failed to fetch results');
+      }
+      const data = await response.json();
+      
+      // データの有効性を確認
+      if (!Array.isArray(data)) {
+        console.error('Invalid data format:', data);
+        setResults([]);
+        return;
+      }
+
+      // 必要なプロパティの存在を確認してフィルタリング
+      const validResults = data.filter(result => {
+        const isValid = result && 
+          typeof result.code === 'string' &&
+          typeof result.startDate === 'string' &&
+          typeof result.endDate === 'string' &&
+          typeof result.executedAt === 'string' &&
+          typeof result.totalReturn === 'number' &&
+          typeof result.winRate === 'number' &&
+          typeof result.maxDrawdown === 'number' &&
+          typeof result.sharpeRatio === 'number';
+
+        if (!isValid) {
+          console.warn('Invalid result data:', result);
+        }
+        return isValid;
+      });
+
+      setResults(validResults);
+    } catch (err) {
+      setError('バックテスト結果の取得に失敗しました');
+      console.error('Error fetching results:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const columns = [
@@ -194,6 +185,10 @@ export default function BacktestResultsTable() {
       ]
     },
   });
+
+  useEffect(() => {
+    fetchResults();
+  }, []);
 
   return (
     <div className="space-y-4">

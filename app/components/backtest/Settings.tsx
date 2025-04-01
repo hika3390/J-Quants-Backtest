@@ -3,17 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FormSection } from '../common/FormComponents';
-import TabButton from './TabButton';
 import BasicSettings, { BasicSettingsData } from './BasicSettings';
 import FundSettings, { FundSettingsData } from './FundSettings';
 import ConditionForm from './ConditionForm';
 import { TabType, Condition } from '../../types/backtest';
 
-const AVAILABLE_TABS: TabType[] = ['buy', 'sell'];
-
 export default function BacktestSettings() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>('buy');
   const [basicSettings, setBasicSettings] = useState<BasicSettingsData>({
     code: '',
     startDate: '',
@@ -110,6 +106,18 @@ export default function BacktestSettings() {
 
   return (
     <div className="space-y-6">
+
+      {error && (
+        <div className="flex items-center justify-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-lg animate-[fadeIn_0.2s_ease-out]">
+          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-white-500/90 font-medium">
+            {error}
+          </span>
+        </div>
+      )}
+
       <FormSection title="基本設定">
         <BasicSettings onChange={setBasicSettings} />
       </FormSection>
@@ -119,27 +127,32 @@ export default function BacktestSettings() {
       </FormSection>
 
       <FormSection title="インジケーター設定">
-        <div className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {AVAILABLE_TABS.map((tab) => (
-              <TabButton
-                key={tab}
-                tab={tab}
-                isActive={activeTab === tab}
-                onClick={() => setActiveTab(tab)}
-              />
-            ))}
-          </div>
+        <div className="grid grid-cols-1 gap-4">
           <div className="bg-slate-700/50 rounded p-4">
+            <h3 className="text-lg font-medium mb-4">買い条件</h3>
             <ConditionForm 
-              type={activeTab}
-              currentValue={conditions[activeTab]}
+              type="buy"
+              currentValue={conditions.buy}
               onChange={(condition) => {
                 if (condition) {
-                  console.log('Updating condition for', activeTab, ':', condition);
                   setConditions(prev => ({
                     ...prev,
-                    [activeTab]: condition
+                    buy: condition
+                  }));
+                }
+              }}
+            />
+          </div>
+          <div className="bg-slate-700/50 rounded p-4">
+            <h3 className="text-lg font-medium mb-4">売り条件</h3>
+            <ConditionForm 
+              type="sell"
+              currentValue={conditions.sell}
+              onChange={(condition) => {
+                if (condition) {
+                  setConditions(prev => ({
+                    ...prev,
+                    sell: condition
                   }));
                 }
               }}
@@ -147,18 +160,6 @@ export default function BacktestSettings() {
           </div>
         </div>
       </FormSection>
-
-      {isLoading && (
-        <div className="text-center text-slate-400">
-          データを読み込んでいます...
-        </div>
-      )}
-
-      {error && (
-        <div className="text-center text-red-500">
-          {error}
-        </div>
-      )}
 
       <div className="text-center pt-4">
         <button

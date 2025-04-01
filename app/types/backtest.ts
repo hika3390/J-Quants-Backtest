@@ -12,7 +12,7 @@ export const TAB_LABELS: Record<TabType, string> = {
 export interface Condition {
   indicator: string;
   period: number;
-  params: Record<string, number>;
+  params: Record<string, number | string>;
 }
 
 export interface IndicatorType {
