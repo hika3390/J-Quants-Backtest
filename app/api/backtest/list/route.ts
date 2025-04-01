@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { BacktestResult } from '@/app/types/backtest';
 
 declare global {
@@ -6,7 +6,7 @@ declare global {
 }
 
 // メモリ上の一時データストアからバックテスト結果の一覧を取得
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     if (!global.tempDataStore) {
       return NextResponse.json([]);

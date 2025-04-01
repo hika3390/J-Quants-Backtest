@@ -84,7 +84,7 @@ class JQuantsAuth {
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      throw new Error(`Invalid JSON response: ${responseText}`);
+      throw new Error(`Invalid JSON response: ${responseText} \n error: ${e}`);
     }
 
     if (!data.refreshToken) {
@@ -118,7 +118,7 @@ class JQuantsAuth {
     try {
       data = JSON.parse(responseText);
     } catch (e) {
-      throw new Error(`Invalid JSON response: ${responseText}`);
+      throw new Error(`Invalid JSON response: ${responseText} \n error: ${e}`);
     }
 
     if (!data.idToken) {

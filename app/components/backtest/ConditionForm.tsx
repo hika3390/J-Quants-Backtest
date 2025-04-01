@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useEffect } from 'react';
+import { memo, useState } from 'react';
 import { FormField } from '../common/FormComponents';
 import { TabType } from '../../types/backtest';
 import { indicators } from '@/app/constants/indicators';
@@ -19,7 +19,7 @@ interface ConditionFormProps {
   onChange: (condition: Condition | null) => void;
 }
 
-const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps) => {
+const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
   const [selectedIndicator, setSelectedIndicator] = useState<string>(
     currentValue?.indicator || 'rsi'
   );

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id });
   } catch (error) {
     return NextResponse.json(
-      { error: 'Failed to store data' },
+      { error: `Failed to store data : ${error}` },
       { status: 500 }
     );
   }
