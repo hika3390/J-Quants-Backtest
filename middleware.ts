@@ -7,6 +7,8 @@ const publicPaths = ["/auth/signin", "/auth/signup", "/api/auth/signup"]
 export async function middleware(req: NextRequest) {
   const headers = new Headers(req.headers)
   const pathname = req.nextUrl.pathname
+  const protocol = headers.get('x-forwarded-proto') || 'http';
+  const isSecure = protocol === 'https';
 
   // パスがpublicPathsに含まれる場合は認証をスキップ
   if (publicPaths.some(path => pathname.startsWith(path))) {
@@ -21,7 +23,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  const token = await getToken({ req })
+  const token = await getToken({ 
+    req,
+    secureCookie: isSecure, // HTTPSの場合はtrue、HTTPの場合はfalse
+    cookieName: process.env.NEXTAUTH_COOKIE_NAME || 'next-auth.session-token'
+  })
 
   // 未認証の場合はログインページにリダイレクト
   if (!token) {
