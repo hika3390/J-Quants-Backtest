@@ -17,7 +17,7 @@ export default async function RootLayout({
     <html lang="ja">
       <body className="antialiased bg-gradient-to-br from-gray-900 to-black text-gray-100 min-h-screen overflow-x-hidden hardware-accelerated">
         <Providers>
-          <div className="min-h-screen backdrop-blur-sm hardware-accelerated">
+          <div className="min-h-screen hardware-accelerated">
             <Navbar />
             {children}
           </div>
