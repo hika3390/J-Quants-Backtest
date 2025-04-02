@@ -43,7 +43,7 @@ export default function Navbar() {
               href={session ? "/" : "/auth/signin"}
               className="text-lg font-semibold text-gray-100"
             >
-              Backtest
+              J-Quants Backtest
             </Link>
           </div>
           <div className="flex items-center gap-2">
