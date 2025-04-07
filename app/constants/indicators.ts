@@ -2,6 +2,30 @@ import { IndicatorType } from '../types/backtest';
 
 export const indicators: IndicatorType[] = [
   {
+    id: 'price',
+    name: '価格条件',
+    description: '始値・終値による条件判定',
+    parameters: [
+      { 
+        name: '価格タイプ',
+        type: 'select',
+        options: ['open', 'close'],
+        default: 'close'
+      },
+      {
+        name: '条件',
+        type: 'select',
+        options: ['>', '<', '>=', '<=', '=='],
+        default: '>'
+      },
+      {
+        name: '価格',
+        type: 'number',
+        default: 0
+      }
+    ]
+  },
+  {
     id: 'ma',
     name: '移動平均線 (MA)',
     description: 'トレンドを判断するための指標',

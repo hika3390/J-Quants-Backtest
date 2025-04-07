@@ -6,6 +6,7 @@ import { TabType } from '../../types/backtest';
 import { indicators } from '@/app/constants/indicators';
 import RSISettings, { RSISettingsData } from './RSISettings';
 import MASettings, { MASettingsData } from './MASettings';
+import PriceSettings, { PriceSettingsData } from './PriceSettings';
 
 interface Condition {
   indicator: string;
@@ -32,7 +33,7 @@ const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
     if (indicator) {
       const defaultCondition: Condition = {
         indicator: indicatorId,
-        period: indicator.defaultPeriod,
+        period: indicator.defaultPeriod || 1,
         params: {}
       };
       onChange(defaultCondition);
@@ -64,6 +65,20 @@ const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
     onChange(condition);
   };
 
+  // 価格設定が変更されたときの処理
+  const handlePriceChange = (settings: PriceSettingsData) => {
+    const condition: Condition = {
+      indicator: 'price',
+      period: 1,
+      params: {
+        'priceType': settings.priceType,
+        'operator': settings.operator,
+        'targetValue': settings.targetValue
+      }
+    };
+    onChange(condition);
+  };
+
   return (
     <div className="space-y-4">
       <FormField label="インジケーター">
@@ -89,6 +104,17 @@ const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
       {selectedIndicator === 'ma' && (
         <MASettings
           onChange={handleMAChange}
+        />
+      )}
+
+      {selectedIndicator === 'price' && (
+        <PriceSettings
+          onChange={handlePriceChange}
+          currentValue={currentValue?.indicator === 'price' ? {
+            priceType: currentValue.params.priceType as 'open' | 'close',
+            operator: currentValue.params.operator as '>' | '<' | '>=' | '<=' | '==',
+            targetValue: Number(currentValue.params.targetValue)
+          } : undefined}
         />
       )}
     </div>

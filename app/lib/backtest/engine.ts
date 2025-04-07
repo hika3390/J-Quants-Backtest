@@ -94,8 +94,39 @@ export class BacktestEngine {
     const prices = this.quotes.map(q => q.Close);
     let signals: number[];
 
+    // 価格データを取得
+    const priceArray = this.quotes.map(q => {
+      return {
+        open: q.Open,
+        close: q.Close
+      };
+    });
+
     // インジケーターに応じてシグナルを生成
     switch (this.params.indicator) {
+      case 'price': {
+        const priceType = this.params.params.priceType as 'open' | 'close';
+        const operator = this.params.params.operator as string;
+        const targetValue = Number(this.params.params.targetValue);
+        signals = priceArray.map(p => {
+          const currentPrice = priceType === 'open' ? p.open : p.close;
+          switch (operator) {
+            case '>':
+              return currentPrice > targetValue ? 1 : -1;
+            case '<':
+              return currentPrice < targetValue ? 1 : -1;
+            case '>=':
+              return currentPrice >= targetValue ? 1 : -1;
+            case '<=':
+              return currentPrice <= targetValue ? 1 : -1;
+            case '==':
+              return currentPrice === targetValue ? 1 : -1;
+            default:
+              return 0;
+          }
+        });
+        break;
+      }
       case 'rsi': {
         const rsiValues = calculateRSI(this.quotes, this.params.period);
         signals = generateRSISignals(

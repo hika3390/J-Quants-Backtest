@@ -19,11 +19,12 @@ export interface IndicatorType {
   id: string;
   name: string;
   description: string;
-  defaultPeriod: number;
+  defaultPeriod?: number;
   parameters?: {
     name: string;
-    type: 'number' | 'string';
+    type: 'number' | 'string' | 'select';
     default: number | string;
+    options?: string[];
   }[];
 }
 
