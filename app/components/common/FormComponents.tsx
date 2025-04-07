@@ -6,11 +6,10 @@ interface FormFieldProps {
   label: string;
   children: React.ReactNode;
   error?: string;
-  className?: string;
 }
 
-export const FormField = memo(({ label, children, error, className }: FormFieldProps) => (
-  <div className={className}>
+export const FormField = memo(({ label, children, error }: FormFieldProps) => (
+  <div>
     <label className="block mb-2 text-sm font-medium text-slate-300">{label}</label>
     {children}
     {error && (

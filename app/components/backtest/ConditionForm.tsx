@@ -110,11 +110,6 @@ const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
       {selectedIndicator === 'price' && (
         <PriceSettings
           onChange={handlePriceChange}
-          currentValue={currentValue?.indicator === 'price' ? {
-            priceType: currentValue.params.priceType as 'open' | 'close',
-            operator: currentValue.params.operator as '>' | '<' | '>=' | '<=' | '==',
-            targetValue: Number(currentValue.params.targetValue)
-          } : undefined}
         />
       )}
     </div>

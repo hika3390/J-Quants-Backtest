@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 interface MASettingsProps {
   onChange: (settings: MASettingsData) => void;
 }
@@ -10,23 +12,35 @@ export interface MASettingsData {
 }
 
 export default function MASettings({ onChange }: MASettingsProps) {
-  const handlePeriodChange = (value: string) => {
-    const numValue = parseInt(value, 10);
-    if (isNaN(numValue)) return;
+  const [settings, setSettings] = useState<MASettingsData>({
+    period: 20,
+    type: 'SMA',
+  });
 
-    onChange({
-      period: numValue,
-      type: 'SMA', // デフォルト値を維持
-    });
-  };
+  const handleChange = (field: keyof MASettingsData, value: string) => {
+    if(field === 'period') {
+      const numValue = parseInt(value, 10);
+      if (isNaN(numValue)) return;
 
-  const handleTypeChange = (value: string) => {
-    if (value !== 'SMA' && value !== 'EMA') return;
+      const newSettings = {
+        ...settings,
+        [field]: numValue,
+      };
+  
+      setSettings(newSettings);
+      onChange(newSettings);
+    }
 
-    onChange({
-      period: 20, // デフォルト値を維持
-      type: value,
-    });
+    let newValue = value;
+    if (field == 'type' && value !== 'SMA' && value !== 'EMA') return;
+
+    const newSettings = {
+      ...settings,
+      [field]: newValue,
+    };
+
+    setSettings(newSettings);
+    onChange(newSettings);
   };
 
   return (
@@ -40,7 +54,7 @@ export default function MASettings({ onChange }: MASettingsProps) {
             type="number"
             min="1"
             defaultValue="20"
-            onChange={(e) => handlePeriodChange(e.target.value)}
+            onChange={(e) => handleChange('period', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
@@ -50,7 +64,7 @@ export default function MASettings({ onChange }: MASettingsProps) {
           </label>
           <select
             defaultValue="SMA"
-            onChange={(e) => handleTypeChange(e.target.value)}
+            onChange={(e) => handleChange('type', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="SMA">単純移動平均 (SMA)</option>

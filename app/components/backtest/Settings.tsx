@@ -36,6 +36,7 @@ export default function BacktestSettings() {
   const [error, setError] = useState<string | null>(null);
 
   const handleBacktest = async () => {
+    console.log(conditions);
     if (!basicSettings.code || !basicSettings.startDate || !basicSettings.endDate) {
       setError('銘柄と期間を選択してください');
       return;
