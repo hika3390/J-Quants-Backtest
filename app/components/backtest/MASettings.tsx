@@ -31,7 +31,7 @@ export default function MASettings({ onChange }: MASettingsProps) {
       onChange(newSettings);
     }
 
-    let newValue = value;
+    const newValue = value;
     if (field == 'type' && value !== 'SMA' && value !== 'EMA') return;
 
     const newSettings = {

@@ -33,7 +33,7 @@ export default function PriceSettings({ onChange }: PriceSettingsProps) {
       onChange(newSettings);
     }
 
-    let newValue = value;
+    const newValue = value;
     if(field === 'priceType' && value !== 'open' && value !== 'close') return;
     if(field === 'operator' && value !== '>' && value !== '<' && value !== '>=' && value !== '<=' && value !== '==') return;
 
