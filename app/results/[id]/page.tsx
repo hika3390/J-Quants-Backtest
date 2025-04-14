@@ -204,10 +204,10 @@ export default function BacktestResult() {
           data={result.priceData}
           trades={result.trades}
           conditions={result.conditions || {
-            buy: [],
-            sell: [],
-            tp: [],
-            sl: []
+            buy: { operator: 'AND', conditions: [] },
+            sell: { operator: 'AND', conditions: [] },
+            tp: { operator: 'AND', conditions: [] },
+            sl: { operator: 'AND', conditions: [] }
           }}
         />
       </div>
@@ -220,35 +220,47 @@ export default function BacktestResult() {
             {/* 買い条件 */}
             <div className="border-r border-slate-700 pr-4">
               <h4 className="text-md font-medium mb-4">買い条件</h4>
-              {result.conditions.buy && result.conditions.buy.length > 0 ? (
+              {result.conditions.buy && result.conditions.buy.conditions.length > 0 ? (
                 <div className="space-y-4">
-                  {result.conditions.buy.map((condition, index) => {
-                    const indicator = indicators.find(i => i.id === condition.indicator);
-                    if (!indicator) return null;
+                  <p className="text-sm text-slate-400 mb-2">
+                    条件の組み合わせ: {result.conditions.buy.operator === 'AND' ? 
+                      'すべての条件を満たす (AND)' : 
+                      'いずれかの条件を満たす (OR)'}
+                  </p>
+                  <div className="pl-4 border-l-2 border-indigo-500">
+                    {result.conditions.buy.conditions.map((condition, index) => {
+                      const indicator = indicators.find(i => i.id === condition.indicator);
+                      if (!indicator) return null;
 
-                    return (
-                      <div key={index} className="pl-4 border-l-2 border-slate-700">
-                        <p className="text-slate-200">{indicator.name}</p>
-                        <p className="text-sm text-slate-400">期間: {condition.period}</p>
-                        {condition.params && Object.entries(condition.params).map(([key, value]) => (
-                          <p key={key} className="text-sm text-slate-400">
-                            {key}: {value}
-                          </p>
-                        ))}
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div key={index} className="mb-4 last:mb-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">条件 {index + 1}</span>
+                            <h5 className="text-slate-200">{indicator.name}</h5>
+                          </div>
+                          <div className="mt-1 pl-4 border-l border-slate-700">
+                            <p className="text-sm text-slate-400">期間: {condition.period}</p>
+                            {condition.params && Object.entries(condition.params).map(([key, value]) => (
+                              <p key={key} className="text-sm text-slate-400">
+                                {key}: {value}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <p className="text-slate-400">買い条件が設定されていません</p>
               )}
 
               {/* 利確条件 */}
-              {result.conditions.tp && result.conditions.tp.length > 0 && (
+              {result.conditions.tp?.conditions.length > 0 && (
                 <div className="mt-4">
                   <h5 className="text-sm font-medium mb-2 text-slate-400">利確条件</h5>
                   <div className="space-y-2">
-                    {result.conditions.tp.map((condition, index) => {
+                    {result.conditions.tp.conditions.map((condition, index) => {
                       const indicator = indicators.find(i => i.id === condition.indicator);
                       if (!indicator) return null;
 
@@ -272,35 +284,47 @@ export default function BacktestResult() {
             {/* 売り条件 */}
             <div className="pl-4">
               <h4 className="text-md font-medium mb-4">売り条件</h4>
-              {result.conditions.sell && result.conditions.sell.length > 0 ? (
+              {result.conditions.sell && result.conditions.sell.conditions.length > 0 ? (
                 <div className="space-y-4">
-                  {result.conditions.sell.map((condition, index) => {
-                    const indicator = indicators.find(i => i.id === condition.indicator);
-                    if (!indicator) return null;
+                  <p className="text-sm text-slate-400 mb-2">
+                    条件の組み合わせ: {result.conditions.sell.operator === 'AND' ? 
+                      'すべての条件を満たす (AND)' : 
+                      'いずれかの条件を満たす (OR)'}
+                  </p>
+                  <div className="pl-4 border-l-2 border-rose-500">
+                    {result.conditions.sell.conditions.map((condition, index) => {
+                      const indicator = indicators.find(i => i.id === condition.indicator);
+                      if (!indicator) return null;
 
-                    return (
-                      <div key={index} className="pl-4 border-l-2 border-slate-700">
-                        <p className="text-slate-200">{indicator.name}</p>
-                        <p className="text-sm text-slate-400">期間: {condition.period}</p>
-                        {condition.params && Object.entries(condition.params).map(([key, value]) => (
-                          <p key={key} className="text-sm text-slate-400">
-                            {key}: {value}
-                          </p>
-                        ))}
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div key={index} className="mb-4 last:mb-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">条件 {index + 1}</span>
+                            <h5 className="text-slate-200">{indicator.name}</h5>
+                          </div>
+                          <div className="mt-1 pl-4 border-l border-slate-700">
+                            <p className="text-sm text-slate-400">期間: {condition.period}</p>
+                            {condition.params && Object.entries(condition.params).map(([key, value]) => (
+                              <p key={key} className="text-sm text-slate-400">
+                                {key}: {value}
+                              </p>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <p className="text-slate-400">売り条件が設定されていません</p>
               )}
 
               {/* 損切り条件 */}
-              {result.conditions.sl && result.conditions.sl.length > 0 && (
+              {result.conditions.sl?.conditions.length > 0 && (
                 <div className="mt-4">
                   <h5 className="text-sm font-medium mb-2 text-slate-400">損切り条件</h5>
                   <div className="space-y-2">
-                    {result.conditions.sl.map((condition, index) => {
+                    {result.conditions.sl.conditions.map((condition, index) => {
                       const indicator = indicators.find(i => i.id === condition.indicator);
                       if (!indicator) return null;
 

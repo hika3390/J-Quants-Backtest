@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { FormSection } from '../common/FormComponents';
 import BasicSettings, { BasicSettingsData } from './BasicSettings';
 import FundSettings, { FundSettingsData } from './FundSettings';
-import ConditionForm from './ConditionForm';
-import { TabType, Condition } from '../../types/backtest';
+import { TabType, ConditionGroup } from '../../types/backtest';
+import ConditionGroupForm from './ConditionGroupForm';
 
 export default function BacktestSettings() {
   const router = useRouter();
@@ -19,16 +19,22 @@ export default function BacktestSettings() {
     initialCash: 1000000,
     maxPosition: 100
   });
-  const [conditions, setConditions] = useState<Partial<Record<TabType, Condition>>>({
+  const [conditions, setConditions] = useState<Partial<Record<TabType, ConditionGroup>>>({
     buy: {
-      indicator: 'rsi',
-      period: 14,
-      params: { overboughtThreshold: 70, oversoldThreshold: 30 }
+      operator: 'AND',
+      conditions: [{
+        indicator: 'rsi',
+        period: 14,
+        params: { overboughtThreshold: 70, oversoldThreshold: 30 }
+      }]
     },
     sell: {
-      indicator: 'rsi',
-      period: 14,
-      params: { overboughtThreshold: 70, oversoldThreshold: 30 }
+      operator: 'AND',
+      conditions: [{
+        indicator: 'rsi',
+        period: 14,
+        params: { overboughtThreshold: 70, oversoldThreshold: 30 }
+      }]
     }
   });
 
@@ -130,31 +136,27 @@ export default function BacktestSettings() {
         <div className="grid grid-cols-1 gap-4">
           <div className="bg-slate-700/50 rounded p-4">
             <h3 className="text-lg font-medium mb-4">買い条件</h3>
-            <ConditionForm 
+            <ConditionGroupForm
               type="buy"
-              currentValue={conditions.buy}
-              onChange={(condition) => {
-                if (condition) {
-                  setConditions(prev => ({
-                    ...prev,
-                    buy: condition
-                  }));
-                }
+              value={conditions.buy!}
+              onChange={(group) => {
+                setConditions(prev => ({
+                  ...prev,
+                  buy: group
+                }));
               }}
             />
           </div>
           <div className="bg-slate-700/50 rounded p-4">
             <h3 className="text-lg font-medium mb-4">売り条件</h3>
-            <ConditionForm 
+            <ConditionGroupForm
               type="sell"
-              currentValue={conditions.sell}
-              onChange={(condition) => {
-                if (condition) {
-                  setConditions(prev => ({
-                    ...prev,
-                    sell: condition
-                  }));
-                }
+              value={conditions.sell!}
+              onChange={(group) => {
+                setConditions(prev => ({
+                  ...prev,
+                  sell: group
+                }));
               }}
             />
           </div>

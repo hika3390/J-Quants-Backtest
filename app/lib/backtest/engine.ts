@@ -1,13 +1,13 @@
 import { DailyQuote } from '../jquants/api';
 import { calculateRSI, generateRSISignals } from '../indicators/rsi';
 import { calculateMA, calculateEMA } from '../indicators/ma';
+import { Condition, ConditionGroup } from '@/app/types/backtest';
 
 interface BacktestParameters {
   initialCash: number;
   maxPosition: number;
-  indicator: string;
-  period: number;
-  params: Record<string, number | string>;
+  buyConditions: ConditionGroup;
+  sellConditions: ConditionGroup;
 }
 
 interface MASignalParams {
@@ -87,72 +87,92 @@ export class BacktestEngine {
   }
 
   /**
+   * 単一条件のシグナルを生成
+   */
+  private generateSignalForCondition(condition: Condition, quote: DailyQuote, prices: number[]): number {
+    switch (condition.indicator) {
+      case 'price': {
+        const priceType = condition.params.priceType as 'open' | 'close';
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        const currentPrice = priceType === 'open' ? quote.Open : quote.Close;
+        
+        switch (operator) {
+          case '>': return currentPrice > targetValue ? 1 : -1;
+          case '<': return currentPrice < targetValue ? 1 : -1;
+          case '>=': return currentPrice >= targetValue ? 1 : -1;
+          case '<=': return currentPrice <= targetValue ? 1 : -1;
+          case '==': return currentPrice === targetValue ? 1 : -1;
+          default: return 0;
+        }
+      }
+      case 'rsi': {
+        const rsiValues = calculateRSI([quote], condition.period);
+        return generateRSISignals(
+          rsiValues,
+          condition.params.overboughtThreshold as number,
+          condition.params.oversoldThreshold as number
+        )[0];
+      }
+      case 'ma': {
+        const signal = generateMASignals(prices.slice(-condition.period), {
+          type: condition.params.type as 'SMA' | 'EMA',
+          period: condition.period
+        });
+        return signal[signal.length - 1];
+      }
+      default:
+        throw new Error(`未対応のインジケーター: ${condition.indicator}`);
+    }
+  }
+
+  /**
+   * 条件グループの評価
+   */
+  private evaluateConditionGroup(group: ConditionGroup, quote: DailyQuote, prices: number[]): boolean {
+    const results = group.conditions.map(condition => 
+      this.generateSignalForCondition(condition, quote, prices) === 1
+    );
+
+    return group.operator === 'AND'
+      ? results.every(Boolean)
+      : results.some(Boolean);
+  }
+
+  /**
    * バックテストを実行
    */
   public run(): BacktestResult {
-    // 価格データを配列に変換
     const prices = this.quotes.map(q => q.Close);
-    let signals: number[];
-
-    // 価格データを取得
-    const priceArray = this.quotes.map(q => {
-      return {
-        open: q.Open,
-        close: q.Close
-      };
-    });
-
-    // インジケーターに応じてシグナルを生成
-    switch (this.params.indicator) {
-      case 'price': {
-        const priceType = this.params.params.priceType as 'open' | 'close';
-        const operator = this.params.params.operator as string;
-        const targetValue = Number(this.params.params.targetValue);
-        signals = priceArray.map(p => {
-          const currentPrice = priceType === 'open' ? p.open : p.close;
-          switch (operator) {
-            case '>':
-              return currentPrice > targetValue ? 1 : -1;
-            case '<':
-              return currentPrice < targetValue ? 1 : -1;
-            case '>=':
-              return currentPrice >= targetValue ? 1 : -1;
-            case '<=':
-              return currentPrice <= targetValue ? 1 : -1;
-            case '==':
-              return currentPrice === targetValue ? 1 : -1;
-            default:
-              return 0;
-          }
-        });
-        break;
-      }
-      case 'rsi': {
-        const rsiValues = calculateRSI(this.quotes, this.params.period);
-        signals = generateRSISignals(
-          rsiValues,
-          this.params.params.overboughtThreshold as number,
-          this.params.params.oversoldThreshold as number
-        );
-        break;
-      }
-      case 'ma': {
-        signals = generateMASignals(prices, {
-          type: this.params.params.type as 'SMA' | 'EMA',
-          period: this.params.period
-        });
-        break;
-      }
-      default:
-        throw new Error(`未対応のインジケーター: ${this.params.indicator}`);
-    }
 
     // 各日の価格でシミュレーション
     for (let i = 0; i < this.quotes.length; i++) {
       const quote = this.quotes[i];
-      const signal = signals[i];
+      const priceHistory = prices.slice(0, i + 1);
 
-      this.processSignal(signal, quote);
+      // 買いシグナルの評価
+      const shouldBuy = !this.position && 
+        this.evaluateConditionGroup(this.params.buyConditions, quote, priceHistory);
+
+      // 売りシグナルの評価
+      const shouldSell = this.position &&
+        this.evaluateConditionGroup(this.params.sellConditions, quote, priceHistory);
+
+      if (shouldBuy) {
+        const maxQuantity = Math.floor((this.params.initialCash * this.params.maxPosition / 100) / quote.Close);
+        const quantity = Math.min(Math.floor(this.cash / quote.Close), maxQuantity);
+        if (quantity > 0) {
+          this.position = {
+            entryPrice: quote.Close,
+            quantity,
+            entryDate: quote.Date
+          };
+          this.cash -= quantity * quote.Close;
+        }
+      } else if (shouldSell) {
+        this.closePosition(quote);
+      }
+
       this.updateEquity(quote);
       this.dates.push(quote.Date);
     }

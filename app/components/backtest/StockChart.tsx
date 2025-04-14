@@ -1,5 +1,5 @@
 import { DailyQuote } from '@/app/lib/jquants/api';
-import { Trade } from '@/app/types/backtest';
+import { Trade, ConditionGroup } from '@/app/types/backtest';
 import { calculateRSI } from '@/app/lib/indicators/rsi';
 import {
   LineChart,
@@ -13,16 +13,14 @@ import {
   Legend,
 } from 'recharts';
 
-import { Condition } from '@/app/types/backtest';
-
 interface StockChartProps {
   data: DailyQuote[];
   trades?: Trade[];
   conditions?: {
-    buy: Condition[];
-    sell: Condition[];
-    tp: Condition[];
-    sl: Condition[];
+    buy: ConditionGroup;
+    sell: ConditionGroup;
+    tp: ConditionGroup;
+    sl: ConditionGroup;
   };
 }
 
@@ -33,8 +31,8 @@ interface ChartData extends DailyQuote {
 
 export default function StockChart({ data, trades = [], conditions }: StockChartProps) {
   // RSI設定を取得
-  const rsiCondition = conditions?.buy?.find(c => c.indicator === 'rsi') ||
-                      conditions?.sell?.find(c => c.indicator === 'rsi');
+  const rsiCondition = conditions?.buy?.conditions.find(c => c.indicator === 'rsi') ||
+                      conditions?.sell?.conditions.find(c => c.indicator === 'rsi');
   const rsiPeriod = rsiCondition?.period || 14;
   
   // RSIを計算

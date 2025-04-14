@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BacktestEngine } from '@/app/lib/backtest/engine';
 import { DailyQuote } from '@/app/lib/jquants/api';
-import { TabType } from '@/app/types/backtest';
-
-interface Condition {
-  indicator: string;
-  period: number;
-  params: Record<string, number>;
-}
+import { TabType, ConditionGroup } from '@/app/types/backtest';
 
 interface BacktestRequest {
   code: string;
@@ -15,7 +9,7 @@ interface BacktestRequest {
   endDate: string;
   initialCash: number;
   maxPosition: number;
-  conditions: Record<TabType, Condition | null>;
+  conditions: Record<TabType, ConditionGroup>;
   priceData: DailyQuote[];
 }
 
@@ -40,10 +34,10 @@ export async function POST(request: NextRequest) {
     }
 
     // トレード条件を検証
-    const { buy: buyCondition, sell: sellCondition } = conditions;
-    console.log('Trading conditions:', { buyCondition, sellCondition }); // デバッグログ
+    const { buy: buyConditions, sell: sellConditions } = conditions;
+    console.log('Trading conditions:', { buyConditions, sellConditions }); // デバッグログ
 
-    if (!buyCondition?.indicator || !sellCondition?.indicator) {
+    if (!buyConditions?.conditions.length || !sellConditions?.conditions.length) {
       return NextResponse.json(
         { error: '買い条件と売り条件を設定してください' },
         { status: 400 }
@@ -54,9 +48,8 @@ export async function POST(request: NextRequest) {
     const engineParams = {
       initialCash: Number(initialCash),
       maxPosition: Number(maxPosition),
-      indicator: buyCondition.indicator,
-      period: buyCondition.period,
-      params: buyCondition.params
+      buyConditions,
+      sellConditions
     };
 
     console.log('Engine parameters:', engineParams); // デバッグログ
@@ -85,10 +78,10 @@ export async function POST(request: NextRequest) {
       priceData: filteredPriceData,
       dates: filteredPriceData.map(d => d.Date),
       conditions: {
-        buy: [buyCondition],
-        sell: [sellCondition],
-        tp: conditions.tp ? [conditions.tp] : [],
-        sl: conditions.sl ? [conditions.sl] : []
+        buy: buyConditions,
+        sell: sellConditions,
+        tp: conditions.tp || { operator: 'AND', conditions: [] },
+        sl: conditions.sl || { operator: 'AND', conditions: [] }
       }
     };
 

@@ -15,6 +15,13 @@ export interface Condition {
   params: Record<string, number | string>;
 }
 
+export type LogicalOperator = 'AND' | 'OR';
+
+export interface ConditionGroup {
+  conditions: Condition[];
+  operator: LogicalOperator;
+}
+
 export interface IndicatorType {
   id: string;
   name: string;
@@ -57,9 +64,9 @@ export interface BacktestResult {
   equity: number[];
   // インジケーター設定
   conditions: {
-    buy: Condition[];
-    sell: Condition[];
-    tp: Condition[];
-    sl: Condition[];
+    buy: ConditionGroup;
+    sell: ConditionGroup;
+    tp: ConditionGroup;
+    sl: ConditionGroup;
   };
 }
