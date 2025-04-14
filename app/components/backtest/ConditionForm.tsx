@@ -7,6 +7,7 @@ import { indicators } from '@/app/constants/indicators';
 import RSISettings, { RSISettingsData } from './RSISettings';
 import MASettings, { MASettingsData } from './MASettings';
 import PriceSettings, { PriceSettingsData } from './PriceSettings';
+import ProfitLossSettings, { ProfitLossSettingsData } from './ProfitLossSettings';
 
 interface Condition {
   indicator: string;
@@ -20,9 +21,9 @@ interface ConditionFormProps {
   onChange: (condition: Condition | null) => void;
 }
 
-const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
+const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps) => {
   const [selectedIndicator, setSelectedIndicator] = useState<string>(
-    currentValue?.indicator || 'rsi'
+    currentValue?.indicator || (type === 'tp' || type === 'sl' ? 'profit_loss_percent' : 'rsi')
   );
 
   // インジケーター選択が変更されたときの処理
@@ -87,11 +88,19 @@ const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
           onChange={(e) => handleIndicatorChange(e.target.value)}
           className="w-full h-10 px-3 bg-slate-700 rounded text-slate-200 border-0 focus:ring-1 focus:ring-slate-500 appearance-none"
         >
-          {indicators.map((indicator) => (
-            <option key={indicator.id} value={indicator.id}>
-              {indicator.name}
-            </option>
-          ))}
+          {indicators
+            .filter(indicator => {
+              // 利確/損切り条件の場合のみ損益関連のインジケーターを表示
+              if (['profit_loss_percent', 'profit_loss_amount'].includes(indicator.id)) {
+                return type === 'tp' || type === 'sl';
+              }
+              return true;
+            })
+            .map((indicator) => (
+              <option key={indicator.id} value={indicator.id}>
+                {indicator.name}
+              </option>
+            ))}
         </select>
       </FormField>
 
@@ -110,6 +119,40 @@ const ConditionForm = memo(({ currentValue, onChange }: ConditionFormProps) => {
       {selectedIndicator === 'price' && (
         <PriceSettings
           onChange={handlePriceChange}
+        />
+      )}
+
+      {selectedIndicator === 'profit_loss_percent' && (
+        <ProfitLossSettings
+          type="percent"
+          onChange={(settings) => {
+            const condition: Condition = {
+              indicator: 'profit_loss_percent',
+              period: 1,
+              params: {
+                operator: settings.operator,
+                targetValue: settings.targetValue
+              }
+            };
+            onChange(condition);
+          }}
+        />
+      )}
+
+      {selectedIndicator === 'profit_loss_amount' && (
+        <ProfitLossSettings
+          type="amount"
+          onChange={(settings) => {
+            const condition: Condition = {
+              indicator: 'profit_loss_amount',
+              period: 1,
+              params: {
+                operator: settings.operator,
+                targetValue: settings.targetValue
+              }
+            };
+            onChange(condition);
+          }}
         />
       )}
     </div>

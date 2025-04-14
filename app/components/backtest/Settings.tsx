@@ -35,6 +35,22 @@ export default function BacktestSettings() {
         period: 14,
         params: { overboughtThreshold: 70, oversoldThreshold: 30 }
       }]
+    },
+    tp: {
+      operator: 'AND',
+      conditions: [{
+        indicator: 'profit_loss_percent',
+        period: 1,
+        params: { operator: '>', targetValue: 10 }  // デフォルトで10%の利確
+      }]
+    },
+    sl: {
+      operator: 'AND',
+      conditions: [{
+        indicator: 'profit_loss_percent',
+        period: 1,
+        params: { operator: '<', targetValue: -5 }  // デフォルトで-5%の損切り
+      }]
     }
   });
 
@@ -47,8 +63,8 @@ export default function BacktestSettings() {
       return;
     }
 
-    if (!conditions.buy || !conditions.sell) {
-      setError('買い条件と売り条件を設定してください');
+    if (!conditions.buy || !conditions.sell || !conditions.tp || !conditions.sl) {
+      setError('すべての取引条件を設定してください');
       return;
     }
 
@@ -156,6 +172,32 @@ export default function BacktestSettings() {
                 setConditions(prev => ({
                   ...prev,
                   sell: group
+                }));
+              }}
+            />
+          </div>
+          <div className="bg-slate-700/50 rounded p-4">
+            <h3 className="text-lg font-medium mb-4">利確条件</h3>
+            <ConditionGroupForm
+              type="tp"
+              value={conditions.tp!}
+              onChange={(group) => {
+                setConditions(prev => ({
+                  ...prev,
+                  tp: group
+                }));
+              }}
+            />
+          </div>
+          <div className="bg-slate-700/50 rounded p-4">
+            <h3 className="text-lg font-medium mb-4">損切り条件</h3>
+            <ConditionGroupForm
+              type="sl"
+              value={conditions.sl!}
+              onChange={(group) => {
+                setConditions(prev => ({
+                  ...prev,
+                  sl: group
                 }));
               }}
             />

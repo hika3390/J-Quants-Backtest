@@ -43,6 +43,7 @@ export interface Trade {
   quantity: number;
   profitLoss: number;
   returnPercent: number;
+  exitReason: 'sell' | 'stop_loss' | 'take_profit';
 }
 
 export interface BacktestResult {

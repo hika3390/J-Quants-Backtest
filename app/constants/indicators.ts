@@ -2,6 +2,42 @@ import { IndicatorType } from '../types/backtest';
 
 export const indicators: IndicatorType[] = [
   {
+    id: 'profit_loss_percent',
+    name: 'ポジション損益率',
+    description: 'ポジションの損益率(%)に基づく条件判定',
+    parameters: [
+      {
+        name: '条件',
+        type: 'select',
+        options: ['>', '<', '>=', '<=', '=='],
+        default: '>'
+      },
+      {
+        name: '損益率',
+        type: 'number',
+        default: 0
+      }
+    ]
+  },
+  {
+    id: 'profit_loss_amount',
+    name: 'ポジション損益額',
+    description: 'ポジションの損益額(円)に基づく条件判定',
+    parameters: [
+      {
+        name: '条件',
+        type: 'select',
+        options: ['>', '<', '>=', '<=', '=='],
+        default: '>'
+      },
+      {
+        name: '損益額',
+        type: 'number',
+        default: 0
+      }
+    ]
+  },
+  {
     id: 'price',
     name: '価格条件',
     description: '始値・終値による条件判定',

@@ -8,6 +8,8 @@ interface BacktestParameters {
   maxPosition: number;
   buyConditions: ConditionGroup;
   sellConditions: ConditionGroup;
+  tpConditions: ConditionGroup;  // 利確条件
+  slConditions: ConditionGroup;  // 損切り条件
 }
 
 interface MASignalParams {
@@ -54,6 +56,7 @@ export interface Trade {
   quantity: number;
   profitLoss: number;
   returnPercent: number;
+  exitReason: 'sell' | 'stop_loss' | 'take_profit';
 }
 
 export interface BacktestResult {
@@ -106,6 +109,36 @@ export class BacktestEngine {
           default: return 0;
         }
       }
+      case 'profit_loss_percent': {
+        if (!this.position) return -1;
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        const currentPnL = ((quote.Close - this.position.entryPrice) / this.position.entryPrice) * 100;
+
+        switch (operator) {
+          case '>': return currentPnL > targetValue ? 1 : -1;
+          case '<': return currentPnL < targetValue ? 1 : -1;
+          case '>=': return currentPnL >= targetValue ? 1 : -1;
+          case '<=': return currentPnL <= targetValue ? 1 : -1;
+          case '==': return currentPnL === targetValue ? 1 : -1;
+          default: return 0;
+        }
+      }
+      case 'profit_loss_amount': {
+        if (!this.position) return -1;
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        const currentPnL = (quote.Close - this.position.entryPrice) * this.position.quantity;
+
+        switch (operator) {
+          case '>': return currentPnL > targetValue ? 1 : -1;
+          case '<': return currentPnL < targetValue ? 1 : -1;
+          case '>=': return currentPnL >= targetValue ? 1 : -1;
+          case '<=': return currentPnL <= targetValue ? 1 : -1;
+          case '==': return currentPnL === targetValue ? 1 : -1;
+          default: return 0;
+        }
+      }
       case 'rsi': {
         const rsiValues = calculateRSI([quote], condition.period);
         return generateRSISignals(
@@ -150,27 +183,44 @@ export class BacktestEngine {
       const quote = this.quotes[i];
       const priceHistory = prices.slice(0, i + 1);
 
-      // 買いシグナルの評価
-      const shouldBuy = !this.position && 
-        this.evaluateConditionGroup(this.params.buyConditions, quote, priceHistory);
+      // ポジションがない場合は買いシグナルを評価
+      if (!this.position) {
+        const shouldBuy = this.evaluateConditionGroup(this.params.buyConditions, quote, priceHistory);
 
-      // 売りシグナルの評価
-      const shouldSell = this.position &&
-        this.evaluateConditionGroup(this.params.sellConditions, quote, priceHistory);
-
-      if (shouldBuy) {
-        const maxQuantity = Math.floor((this.params.initialCash * this.params.maxPosition / 100) / quote.Close);
-        const quantity = Math.min(Math.floor(this.cash / quote.Close), maxQuantity);
-        if (quantity > 0) {
-          this.position = {
-            entryPrice: quote.Close,
-            quantity,
-            entryDate: quote.Date
-          };
-          this.cash -= quantity * quote.Close;
+        if (shouldBuy) {
+          const maxQuantity = Math.floor((this.params.initialCash * this.params.maxPosition / 100) / quote.Close);
+          const quantity = Math.min(Math.floor(this.cash / quote.Close), maxQuantity);
+          if (quantity > 0) {
+            this.position = {
+              entryPrice: quote.Close,
+              quantity,
+              entryDate: quote.Date
+            };
+            this.cash -= quantity * quote.Close;
+          }
         }
-      } else if (shouldSell) {
-        this.closePosition(quote);
+      } 
+      // ポジションがある場合は決済条件を評価
+      else {
+        // 1. 損切り条件を最優先で評価
+        const shouldStopLoss = this.evaluateConditionGroup(this.params.slConditions, quote, priceHistory);
+        if (shouldStopLoss) {
+          this.closePosition(quote, 'stop_loss');
+          continue;  // 次の日へ
+        }
+
+        // 2. 利確条件を評価
+        const shouldTakeProfit = this.evaluateConditionGroup(this.params.tpConditions, quote, priceHistory);
+        if (shouldTakeProfit) {
+          this.closePosition(quote, 'take_profit');
+          continue;  // 次の日へ
+        }
+
+        // 3. 一般的な売り条件を評価
+        const shouldSell = this.evaluateConditionGroup(this.params.sellConditions, quote, priceHistory);
+        if (shouldSell) {
+          this.closePosition(quote, 'sell');
+        }
       }
 
       this.updateEquity(quote);
@@ -211,7 +261,7 @@ export class BacktestEngine {
   /**
    * ポジションを決済
    */
-  private closePosition(quote: DailyQuote) {
+  private closePosition(quote: DailyQuote, reason: 'sell' | 'stop_loss' | 'take_profit' = 'sell') {
     if (!this.position) return;
 
     const profitLoss = (quote.Close - this.position.entryPrice) * this.position.quantity;
@@ -224,7 +274,8 @@ export class BacktestEngine {
       exitPrice: quote.Close,
       quantity: this.position.quantity,
       profitLoss,
-      returnPercent
+      returnPercent,
+      exitReason: reason  // 決済理由を追加
     });
 
     this.cash += quote.Close * this.position.quantity;

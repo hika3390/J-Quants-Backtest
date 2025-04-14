@@ -34,12 +34,20 @@ export async function POST(request: NextRequest) {
     }
 
     // トレード条件を検証
-    const { buy: buyConditions, sell: sellConditions } = conditions;
-    console.log('Trading conditions:', { buyConditions, sellConditions }); // デバッグログ
+    const { 
+      buy: buyConditions, 
+      sell: sellConditions,
+      tp: tpConditions,
+      sl: slConditions 
+    } = conditions;
+    console.log('Trading conditions:', { buyConditions, sellConditions, tpConditions, slConditions }); // デバッグログ
 
-    if (!buyConditions?.conditions.length || !sellConditions?.conditions.length) {
+    if (!buyConditions?.conditions.length || 
+        !sellConditions?.conditions.length ||
+        !tpConditions?.conditions.length ||
+        !slConditions?.conditions.length) {
       return NextResponse.json(
-        { error: '買い条件と売り条件を設定してください' },
+        { error: 'すべての取引条件を設定してください' },
         { status: 400 }
       );
     }
@@ -49,7 +57,9 @@ export async function POST(request: NextRequest) {
       initialCash: Number(initialCash),
       maxPosition: Number(maxPosition),
       buyConditions,
-      sellConditions
+      sellConditions,
+      tpConditions,
+      slConditions
     };
 
     console.log('Engine parameters:', engineParams); // デバッグログ
@@ -80,8 +90,8 @@ export async function POST(request: NextRequest) {
       conditions: {
         buy: buyConditions,
         sell: sellConditions,
-        tp: conditions.tp || { operator: 'AND', conditions: [] },
-        sl: conditions.sl || { operator: 'AND', conditions: [] }
+        tp: tpConditions,
+        sl: slConditions
       }
     };
 
