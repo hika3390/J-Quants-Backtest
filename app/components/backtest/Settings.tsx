@@ -50,7 +50,7 @@ export default function BacktestSettings() {
       conditions: [{
         indicator: 'profit_loss_percent',
         period: 1,
-        params: { operator: '<', targetValue: -5 }  // デフォルトで-5%の損切り
+        params: { operator: 'disabled', targetValue: 0 }  // デフォルトで損切りなし
       }]
     }
   });

@@ -112,6 +112,12 @@ export class BacktestEngine {
       case 'profit_loss_percent': {
         if (!this.position) return -1;
         const operator = condition.params.operator as string;
+        
+        // 「無効」オプションの場合は常に-1を返す（シグナルなし）
+        if (operator === 'disabled') {
+          return -1;
+        }
+        
         const targetValue = Number(condition.params.targetValue);
         const currentPnL = ((quote.Close - this.position.entryPrice) / this.position.entryPrice) * 100;
 
@@ -127,6 +133,12 @@ export class BacktestEngine {
       case 'profit_loss_amount': {
         if (!this.position) return -1;
         const operator = condition.params.operator as string;
+        
+        // 「無効」オプションの場合は常に-1を返す（シグナルなし）
+        if (operator === 'disabled') {
+          return -1;
+        }
+        
         const targetValue = Number(condition.params.targetValue);
         const currentPnL = (quote.Close - this.position.entryPrice) * this.position.quantity;
 

@@ -9,7 +9,7 @@ export const indicators: IndicatorType[] = [
       {
         name: '条件',
         type: 'select',
-        options: ['>', '<', '>=', '<=', '=='],
+        options: ['>', '<', '>=', '<=', '==', 'disabled'],
         default: '>'
       },
       {
@@ -27,7 +27,7 @@ export const indicators: IndicatorType[] = [
       {
         name: '条件',
         type: 'select',
-        options: ['>', '<', '>=', '<=', '=='],
+        options: ['>', '<', '>=', '<=', '==', 'disabled'],
         default: '>'
       },
       {

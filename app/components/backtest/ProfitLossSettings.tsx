@@ -33,7 +33,7 @@ export default function ProfitLossSettings({ type, onChange }: Props) {
     }
 
 		const newValue = value;
-    if (field == 'operator' && value !== '>' && value !== '<' && value !== '>=' && value !== '<=' && value !== '==') return;
+    if (field == 'operator' && value !== '>' && value !== '<' && value !== '>=' && value !== '<=' && value !== '==' && value !== 'disabled') return;
 
     const newSettings = {
       ...settings,
@@ -61,6 +61,7 @@ export default function ProfitLossSettings({ type, onChange }: Props) {
             <option value=">=">以上</option>
             <option value="<=">以下</option>
             <option value="==">等しい</option>
+            <option value="disabled">無効（損切りなし）</option>
           </select>
         </div>
         <div>
@@ -72,7 +73,10 @@ export default function ProfitLossSettings({ type, onChange }: Props) {
             min="0"
             defaultValue="20"
             onChange={(e) => handleChange('targetValue', e.target.value)}
-            className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            disabled={settings.operator === 'disabled'}
+            className={`w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+              settings.operator === 'disabled' ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           />
         </div>
       </div>
