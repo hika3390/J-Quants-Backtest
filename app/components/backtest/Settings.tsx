@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { FormSection } from '../common/FormComponents';
 import BasicSettings, { BasicSettingsData } from './BasicSettings';
@@ -56,6 +57,19 @@ export default function BacktestSettings() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState({
+    buy: false,
+    sell: false,
+    tp: true,
+    sl: true
+  });
+
+  const toggleSection = (section: keyof typeof collapsedSections) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   const handleBacktest = async () => {
     if (!basicSettings.code || !basicSettings.startDate || !basicSettings.endDate) {
@@ -128,7 +142,6 @@ export default function BacktestSettings() {
 
   return (
     <div className="space-y-6">
-
       {error && (
         <div className="flex items-center justify-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-lg animate-[fadeIn_0.2s_ease-out]">
           <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,56 +164,127 @@ export default function BacktestSettings() {
       <FormSection title="インジケーター設定">
         <div className="grid grid-cols-1 gap-4">
           <div className="bg-slate-700/50 rounded p-4">
-            <h3 className="text-lg font-medium mb-4">買い条件</h3>
-            <ConditionGroupForm
-              type="buy"
-              value={conditions.buy!}
-              onChange={(group) => {
-                setConditions(prev => ({
-                  ...prev,
-                  buy: group
-                }));
-              }}
-            />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">買い条件</h3>
+              <button
+                onClick={() => toggleSection('buy')}
+                className="p-1 hover:bg-slate-600 rounded-full transition-colors"
+                aria-label={collapsedSections.buy ? "展開" : "折りたたむ"}
+              >
+                {collapsedSections.buy ? (
+                  <ChevronDownIcon className="w-5 h-5" />
+                ) : (
+                  <ChevronUpIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <div className={`transition-all duration-200 ease-in-out ${
+              collapsedSections.buy ? 'h-0 opacity-0 overflow-hidden' : 'opacity-100'
+            }`}>
+              <ConditionGroupForm
+                type="buy"
+                value={conditions.buy!}
+                onChange={(group) => {
+                  setConditions(prev => ({
+                    ...prev,
+                    buy: group
+                  }));
+                }}
+              />
+            </div>
           </div>
+
           <div className="bg-slate-700/50 rounded p-4">
-            <h3 className="text-lg font-medium mb-4">売り条件</h3>
-            <ConditionGroupForm
-              type="sell"
-              value={conditions.sell!}
-              onChange={(group) => {
-                setConditions(prev => ({
-                  ...prev,
-                  sell: group
-                }));
-              }}
-            />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">売り条件</h3>
+              <button
+                onClick={() => toggleSection('sell')}
+                className="p-1 hover:bg-slate-600 rounded-full transition-colors"
+                aria-label={collapsedSections.sell ? "展開" : "折りたたむ"}
+              >
+                {collapsedSections.sell ? (
+                  <ChevronDownIcon className="w-5 h-5" />
+                ) : (
+                  <ChevronUpIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <div className={`transition-all duration-200 ease-in-out ${
+              collapsedSections.sell ? 'h-0 opacity-0 overflow-hidden' : 'opacity-100'
+            }`}>
+              <ConditionGroupForm
+                type="sell"
+                value={conditions.sell!}
+                onChange={(group) => {
+                  setConditions(prev => ({
+                    ...prev,
+                    sell: group
+                  }));
+                }}
+              />
+            </div>
           </div>
+
           <div className="bg-slate-700/50 rounded p-4">
-            <h3 className="text-lg font-medium mb-4">利確条件</h3>
-            <ConditionGroupForm
-              type="tp"
-              value={conditions.tp!}
-              onChange={(group) => {
-                setConditions(prev => ({
-                  ...prev,
-                  tp: group
-                }));
-              }}
-            />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">利確条件</h3>
+              <button
+                onClick={() => toggleSection('tp')}
+                className="p-1 hover:bg-slate-600 rounded-full transition-colors"
+                aria-label={collapsedSections.tp ? "展開" : "折りたたむ"}
+              >
+                {collapsedSections.tp ? (
+                  <ChevronDownIcon className="w-5 h-5" />
+                ) : (
+                  <ChevronUpIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <div className={`transition-all duration-200 ease-in-out ${
+              collapsedSections.tp ? 'h-0 opacity-0 overflow-hidden' : 'opacity-100'
+            }`}>
+              <ConditionGroupForm
+                type="tp"
+                value={conditions.tp!}
+                onChange={(group) => {
+                  setConditions(prev => ({
+                    ...prev,
+                    tp: group
+                  }));
+                }}
+              />
+            </div>
           </div>
+
           <div className="bg-slate-700/50 rounded p-4">
-            <h3 className="text-lg font-medium mb-4">損切り条件</h3>
-            <ConditionGroupForm
-              type="sl"
-              value={conditions.sl!}
-              onChange={(group) => {
-                setConditions(prev => ({
-                  ...prev,
-                  sl: group
-                }));
-              }}
-            />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">損切り条件</h3>
+              <button
+                onClick={() => toggleSection('sl')}
+                className="p-1 hover:bg-slate-600 rounded-full transition-colors"
+                aria-label={collapsedSections.sl ? "展開" : "折りたたむ"}
+              >
+                {collapsedSections.sl ? (
+                  <ChevronDownIcon className="w-5 h-5" />
+                ) : (
+                  <ChevronUpIcon className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+            <div className={`transition-all duration-200 ease-in-out ${
+              collapsedSections.sl ? 'h-0 opacity-0 overflow-hidden' : 'opacity-100'
+            }`}>
+              <ConditionGroupForm
+                type="sl"
+                value={conditions.sl!}
+                onChange={(group) => {
+                  setConditions(prev => ({
+                    ...prev,
+                    sl: group
+                  }));
+                }}
+              />
+            </div>
           </div>
         </div>
       </FormSection>
