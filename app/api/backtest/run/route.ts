@@ -23,8 +23,6 @@ export async function POST(request: NextRequest) {
       priceData
     } = body;
 
-    console.log('Request body:', body); // デバッグログ
-
     // パラメータのバリデーション
     if (!priceData || priceData.length === 0) {
       return NextResponse.json(
@@ -40,7 +38,6 @@ export async function POST(request: NextRequest) {
       tp: tpConditions,
       sl: slConditions 
     } = conditions;
-    console.log('Trading conditions:', { buyConditions, sellConditions, tpConditions, slConditions }); // デバッグログ
 
     if (!buyConditions?.conditions.length || 
         !sellConditions?.conditions.length ||
@@ -61,8 +58,6 @@ export async function POST(request: NextRequest) {
       tpConditions,
       slConditions
     };
-
-    console.log('Engine parameters:', engineParams); // デバッグログ
 
     // バックテストエンジンを初期化して実行
     const engine = new BacktestEngine(priceData, engineParams);
@@ -97,7 +92,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Backtest error:', error);
     return NextResponse.json(
       { error: 'Failed to run backtest' },
       { status: 500 }

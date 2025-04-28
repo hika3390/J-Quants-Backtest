@@ -24,7 +24,7 @@ const ComparisonSettings = memo(({ initialValue, onChange, label = '条件', dis
 
   useEffect(() => {
     onChange(settings);
-  }, [settings, onChange]);
+  }, [settings]);
 
   const handleOperatorChange = (value: string) => {
     const newSettings = { ...settings, operator: value };

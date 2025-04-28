@@ -22,7 +22,7 @@ const TimeReferenceSettings = memo(({ initialValue, onChange }: TimeReferenceSet
 
   useEffect(() => {
     onChange(settings);
-  }, [settings, onChange]);
+  }, [settings]);
 
   const handleTimeReferenceChange = (value: string) => {
     const newSettings = { ...settings, timeReference: value };

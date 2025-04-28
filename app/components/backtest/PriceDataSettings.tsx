@@ -30,7 +30,7 @@ const PriceDataSettings = memo(({ initialValue, onChange, indicatorId }: PriceDa
 
   useEffect(() => {
     onChange(settings);
-  }, [settings, onChange]);
+  }, [settings]);
 
   const handlePriceTypeChange = (value: string) => {
     const newSettings = { ...settings, priceType: value };

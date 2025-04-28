@@ -22,7 +22,7 @@ const CompanyInfoSettings = memo(({ initialValue, onChange, indicatorId }: Compa
 
   useEffect(() => {
     onChange(settings);
-  }, [settings, onChange]);
+  }, [settings]);
 
   const handleOperatorChange = (value: string) => {
     const newSettings = { ...settings, operator: value };

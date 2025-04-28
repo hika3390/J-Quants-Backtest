@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { FormSection } from '../common/FormComponents';
@@ -54,6 +54,35 @@ export default function BacktestSettings() {
       }]
     }
   });
+
+  // useCallbackを使用して関数をメモ化
+  const handleBuyConditionChange = useCallback((group: ConditionGroup) => {
+    setConditions(prev => ({
+      ...prev,
+      buy: group
+    }));
+  }, []);
+
+  const handleSellConditionChange = useCallback((group: ConditionGroup) => {
+    setConditions(prev => ({
+      ...prev,
+      sell: group
+    }));
+  }, []);
+
+  const handleTpConditionChange = useCallback((group: ConditionGroup) => {
+    setConditions(prev => ({
+      ...prev,
+      tp: group
+    }));
+  }, []);
+
+  const handleSlConditionChange = useCallback((group: ConditionGroup) => {
+    setConditions(prev => ({
+      ...prev,
+      sl: group
+    }));
+  }, []);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,12 +213,7 @@ export default function BacktestSettings() {
               <ConditionGroupForm
                 type="buy"
                 value={conditions.buy!}
-                onChange={(group) => {
-                  setConditions(prev => ({
-                    ...prev,
-                    buy: group
-                  }));
-                }}
+                onChange={handleBuyConditionChange}
               />
             </div>
           </div>
@@ -215,12 +239,7 @@ export default function BacktestSettings() {
               <ConditionGroupForm
                 type="sell"
                 value={conditions.sell!}
-                onChange={(group) => {
-                  setConditions(prev => ({
-                    ...prev,
-                    sell: group
-                  }));
-                }}
+                onChange={handleSellConditionChange}
               />
             </div>
           </div>
@@ -246,12 +265,7 @@ export default function BacktestSettings() {
               <ConditionGroupForm
                 type="tp"
                 value={conditions.tp!}
-                onChange={(group) => {
-                  setConditions(prev => ({
-                    ...prev,
-                    tp: group
-                  }));
-                }}
+                onChange={handleTpConditionChange}
               />
             </div>
           </div>
@@ -277,12 +291,7 @@ export default function BacktestSettings() {
               <ConditionGroupForm
                 type="sl"
                 value={conditions.sl!}
-                onChange={(group) => {
-                  setConditions(prev => ({
-                    ...prev,
-                    sl: group
-                  }));
-                }}
+                onChange={handleSlConditionChange}
               />
             </div>
           </div>
