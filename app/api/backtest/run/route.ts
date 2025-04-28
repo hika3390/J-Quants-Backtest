@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { error: 'Failed to run backtest' },
+      { error: error && error.message ? error.message : 'バックテストの実行中にエラーが発生しました' },
       { status: 500 }
     );
   }
