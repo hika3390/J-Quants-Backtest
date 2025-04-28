@@ -3,6 +3,72 @@ import { calculateRSI, generateRSISignals } from '../indicators/rsi';
 import { calculateMA, calculateEMA } from '../indicators/ma';
 import { Condition, ConditionGroup } from '@/app/types/backtest';
 
+/**
+ * 時間参照に基づいてインデックスを計算
+ */
+function calculateTimeReferenceIndex(currentIndex: number, timeReference: string, period: number, quotes: DailyQuote[]): number {
+  if (!timeReference || timeReference === 'current' || period === 0) {
+    return currentIndex;
+  }
+
+  const currentDate = new Date(quotes[currentIndex].Date);
+  
+  switch (timeReference) {
+    case 'days':
+      // 単純に日数を引く
+      const targetIndex = currentIndex - period;
+      return targetIndex >= 0 ? targetIndex : 0;
+      
+    case 'weeks':
+      // 週数 * 7日を引く
+      const weeksIndex = currentIndex - (period * 7);
+      return weeksIndex >= 0 ? weeksIndex : 0;
+      
+    case 'months': {
+      // 月を引く
+      const targetDate = new Date(currentDate);
+      targetDate.setMonth(targetDate.getMonth() - period);
+      
+      // 日付に最も近いインデックスを探す
+      return findClosestDateIndex(targetDate, quotes, currentIndex);
+    }
+      
+    case 'quarters': {
+      // 四半期（3ヶ月）を引く
+      const targetDate = new Date(currentDate);
+      targetDate.setMonth(targetDate.getMonth() - (period * 3));
+      
+      return findClosestDateIndex(targetDate, quotes, currentIndex);
+    }
+      
+    case 'years': {
+      // 年を引く
+      const targetDate = new Date(currentDate);
+      targetDate.setFullYear(targetDate.getFullYear() - period);
+      
+      return findClosestDateIndex(targetDate, quotes, currentIndex);
+    }
+      
+    default:
+      return currentIndex;
+  }
+}
+
+/**
+ * 指定した日付に最も近いインデックスを見つける
+ */
+function findClosestDateIndex(targetDate: Date, quotes: DailyQuote[], currentIndex: number): number {
+  // 現在のインデックスから遡って探す
+  for (let i = currentIndex; i >= 0; i--) {
+    const quoteDate = new Date(quotes[i].Date);
+    if (quoteDate <= targetDate) {
+      return i;
+    }
+  }
+  
+  return 0; // 見つからない場合は最初のデータを返す
+}
+
 interface BacktestParameters {
   initialCash: number;
   maxPosition: number;
@@ -90,24 +156,87 @@ export class BacktestEngine {
   }
 
   /**
+   * 指定されたインデックスの価格データを取得
+   */
+  private getQuoteValue(quote: DailyQuote, priceType: string): number {
+    switch (priceType) {
+      case 'open': return quote.Open;
+      case 'close': return quote.Close;
+      case 'high': return quote.High;
+      case 'low': return quote.Low;
+      case 'adjustmentClose': return quote.AdjustmentClose || quote.Close;
+      case 'vwap': return quote.VWAP || quote.Close;
+      default: return quote.Close;
+    }
+  }
+
+  /**
+   * 時間参照を考慮して価格データを取得
+   */
+  private getTimeReferenceValue(
+    currentIndex: number, 
+    priceType: string, 
+    timeReference: string, 
+    period: number
+  ): number {
+    if (!timeReference || timeReference === 'current' || period === 0) {
+      return this.getQuoteValue(this.quotes[currentIndex], priceType);
+    }
+    
+    const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, period, this.quotes);
+    return this.getQuoteValue(this.quotes[refIndex], priceType);
+  }
+
+  /**
+   * 比較演算子に基づいて条件を評価
+   */
+  private evaluateComparison(value1: number, operator: string, value2: number): boolean {
+    switch (operator) {
+      case '>': return value1 > value2;
+      case '<': return value1 < value2;
+      case '>=': return value1 >= value2;
+      case '<=': return value1 <= value2;
+      case '==': return value1 === value2;
+      case '!=': return value1 !== value2;
+      default: return false;
+    }
+  }
+
+  /**
    * 単一条件のシグナルを生成
    */
   private generateSignalForCondition(condition: Condition, quote: DailyQuote, prices: number[]): number {
+    const currentIndex = this.quotes.findIndex(q => q.Date === quote.Date);
+    if (currentIndex === -1) return 0;
+
     switch (condition.indicator) {
       case 'price': {
-        const priceType = condition.params.priceType as 'open' | 'close';
+        const priceType = condition.params.priceType as string;
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        const currentPrice = priceType === 'open' ? quote.Open : quote.Close;
         
-        switch (operator) {
-          case '>': return currentPrice > targetValue ? 1 : -1;
-          case '<': return currentPrice < targetValue ? 1 : -1;
-          case '>=': return currentPrice >= targetValue ? 1 : -1;
-          case '<=': return currentPrice <= targetValue ? 1 : -1;
-          case '==': return currentPrice === targetValue ? 1 : -1;
-          default: return 0;
-        }
+        const currentPrice = this.getTimeReferenceValue(currentIndex, priceType, timeReference, refPeriod);
+        
+        return this.evaluateComparison(currentPrice, operator, targetValue) ? 1 : -1;
+      }
+      
+      case 'price_comparison': {
+        const priceType1 = condition.params.priceType1 as string;
+        const timeRef1 = condition.params.timeReference1 as string;
+        const refPeriod1 = Number(condition.params.refPeriod1 || 0);
+        
+        const priceType2 = condition.params.priceType2 as string;
+        const timeRef2 = condition.params.timeReference2 as string;
+        const refPeriod2 = Number(condition.params.refPeriod2 || 0);
+        
+        const operator = condition.params.operator as string;
+        
+        const value1 = this.getTimeReferenceValue(currentIndex, priceType1, timeRef1, refPeriod1);
+        const value2 = this.getTimeReferenceValue(currentIndex, priceType2, timeRef2, refPeriod2);
+        
+        return this.evaluateComparison(value1, operator, value2) ? 1 : -1;
       }
       case 'profit_loss_percent': {
         if (!this.position) return -1;
@@ -121,14 +250,7 @@ export class BacktestEngine {
         const targetValue = Number(condition.params.targetValue);
         const currentPnL = ((quote.Close - this.position.entryPrice) / this.position.entryPrice) * 100;
 
-        switch (operator) {
-          case '>': return currentPnL > targetValue ? 1 : -1;
-          case '<': return currentPnL < targetValue ? 1 : -1;
-          case '>=': return currentPnL >= targetValue ? 1 : -1;
-          case '<=': return currentPnL <= targetValue ? 1 : -1;
-          case '==': return currentPnL === targetValue ? 1 : -1;
-          default: return 0;
-        }
+        return this.evaluateComparison(currentPnL, operator, targetValue) ? 1 : -1;
       }
       case 'profit_loss_amount': {
         if (!this.position) return -1;
@@ -142,15 +264,134 @@ export class BacktestEngine {
         const targetValue = Number(condition.params.targetValue);
         const currentPnL = (quote.Close - this.position.entryPrice) * this.position.quantity;
 
-        switch (operator) {
-          case '>': return currentPnL > targetValue ? 1 : -1;
-          case '<': return currentPnL < targetValue ? 1 : -1;
-          case '>=': return currentPnL >= targetValue ? 1 : -1;
-          case '<=': return currentPnL <= targetValue ? 1 : -1;
-          case '==': return currentPnL === targetValue ? 1 : -1;
-          default: return 0;
-        }
+        return this.evaluateComparison(currentPnL, operator, targetValue) ? 1 : -1;
       }
+      case 'volume': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const volume = this.quotes[refIndex].Volume;
+        
+        return this.evaluateComparison(volume, operator, targetValue) ? 1 : -1;
+      }
+      
+      case 'turnover_value': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const turnoverValue = this.quotes[refIndex].TurnoverValue || 0;
+        
+        return this.evaluateComparison(turnoverValue, operator, targetValue) ? 1 : -1;
+      }
+      
+      case 'market_cap': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const marketCap = this.quotes[refIndex].MarketCapitalization || 0;
+        
+        return this.evaluateComparison(marketCap, operator, targetValue) ? 1 : -1;
+      }
+      
+      // ファンダメンタル指標
+      case 'per': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const per = this.quotes[refIndex].PER || 0;
+        
+        return this.evaluateComparison(per, operator, targetValue) ? 1 : -1;
+      }
+      
+      case 'pbr': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const pbr = this.quotes[refIndex].PBR || 0;
+        
+        return this.evaluateComparison(pbr, operator, targetValue) ? 1 : -1;
+      }
+      
+      case 'dividend_yield': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const dividendYield = this.quotes[refIndex].DividendYield || 0;
+        
+        return this.evaluateComparison(dividendYield, operator, targetValue) ? 1 : -1;
+      }
+      
+      case 'roe': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const roe = this.quotes[refIndex].ROE || 0;
+        
+        return this.evaluateComparison(roe, operator, targetValue) ? 1 : -1;
+      }
+      
+      case 'roa': {
+        const timeReference = condition.params.timeReference as string;
+        const refPeriod = Number(condition.params.refPeriod || 0);
+        const operator = condition.params.operator as string;
+        const targetValue = Number(condition.params.targetValue);
+        
+        const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
+        const roa = this.quotes[refIndex].ROA || 0;
+        
+        return this.evaluateComparison(roa, operator, targetValue) ? 1 : -1;
+      }
+      
+      // 企業・市場情報
+      case 'market': {
+        const operator = condition.params.operator as string;
+        const targetValue = condition.params.targetValue as string;
+        const market = quote.Market || '';
+        
+        return (operator === '==' && market === targetValue) || 
+               (operator === '!=' && market !== targetValue) ? 1 : -1;
+      }
+      
+      case 'industry': {
+        const operator = condition.params.operator as string;
+        const targetValue = condition.params.targetValue as string;
+        const industry = quote.Industry || '';
+        
+        return (operator === '==' && industry === targetValue) || 
+               (operator === '!=' && industry !== targetValue) ? 1 : -1;
+      }
+      
+      case 'sector': {
+        const operator = condition.params.operator as string;
+        const targetValue = condition.params.targetValue as string;
+        const sector = quote.Sector || '';
+        
+        return (operator === '==' && sector === targetValue) || 
+               (operator === '!=' && sector !== targetValue) ? 1 : -1;
+      }
+      
+      // テクニカル指標
       case 'rsi': {
         const rsiValues = calculateRSI([quote], condition.period);
         return generateRSISignals(
@@ -160,12 +401,78 @@ export class BacktestEngine {
         )[0];
       }
       case 'ma': {
-        const signal = generateMASignals(prices.slice(-condition.period), {
-          type: condition.params.type as 'SMA' | 'EMA',
-          period: condition.period
-        });
-        return signal[signal.length - 1];
+        const priceType = condition.params.priceType as string || 'close';
+        const maType = condition.params.type as 'SMA' | 'EMA';
+        const operator = condition.params.operator as string;
+        const compareTarget = condition.params.compareTarget as string || 'price';
+        const comparePeriod = Number(condition.params.comparePeriod || 5);
+        
+        // 価格データを取得
+        const priceData = this.quotes.slice(0, currentIndex + 1).map(q => this.getQuoteValue(q, priceType));
+        
+        // MAを計算
+        const maValues = maType === 'SMA' 
+          ? calculateMA(priceData, condition.period)
+          : calculateEMA(priceData, condition.period);
+        
+        if (maValues.length === 0) return 0;
+        
+        const currentMA = maValues[maValues.length - 1];
+        
+        if (compareTarget === 'price') {
+          // 現在の価格とMAを比較
+          const currentPrice = this.getQuoteValue(quote, priceType);
+          return this.evaluateComparison(currentPrice, operator, currentMA) ? 1 : -1;
+        } else {
+          // 別のMAと比較
+          const compareMA = maType === 'SMA'
+            ? calculateMA(priceData, comparePeriod)
+            : calculateEMA(priceData, comparePeriod);
+            
+          if (compareMA.length === 0) return 0;
+          
+          const compareValue = compareMA[compareMA.length - 1];
+          return this.evaluateComparison(currentMA, operator, compareValue) ? 1 : -1;
+        }
       }
+      case 'bollinger': {
+        const stdDev = Number(condition.params.stdDev || 2);
+        const priceType = condition.params.priceType as string || 'close';
+        
+        // 価格データを取得
+        const priceData = this.quotes.slice(0, currentIndex + 1).map(q => this.getQuoteValue(q, priceType));
+        
+        // 移動平均を計算
+        const ma = calculateMA(priceData.slice(-condition.period), condition.period);
+        if (ma.length === 0) return 0;
+        
+        const currentMA = ma[ma.length - 1];
+        
+        // 標準偏差を計算
+        const recentPrices = priceData.slice(-condition.period);
+        const sum = recentPrices.reduce((a, b) => a + b, 0);
+        const avg = sum / recentPrices.length;
+        const squareDiffs = recentPrices.map(value => Math.pow(value - avg, 2));
+        const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+        const sd = Math.sqrt(avgSquareDiff);
+        
+        // バンドを計算
+        const upperBand = currentMA + (sd * stdDev);
+        const lowerBand = currentMA - (sd * stdDev);
+        
+        // 現在の価格
+        const currentPrice = this.getQuoteValue(quote, priceType);
+        
+        // 価格がバンドを超えているかチェック
+        if (currentPrice > upperBand) {
+          return -1; // 売りシグナル（上限超え）
+        } else if (currentPrice < lowerBand) {
+          return 1;  // 買いシグナル（下限超え）
+        } else {
+          return 0;  // シグナルなし（バンド内）
+        }
+      }
+      
       default:
         throw new Error(`未対応のインジケーター: ${condition.indicator}`);
     }

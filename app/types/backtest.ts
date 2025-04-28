@@ -26,6 +26,7 @@ export interface IndicatorType {
   id: string;
   name: string;
   description: string;
+  category?: string;
   defaultPeriod?: number;
   parameters?: {
     name: string;

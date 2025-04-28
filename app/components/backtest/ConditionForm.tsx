@@ -3,11 +3,13 @@
 import { memo, useState } from 'react';
 import { FormField } from '../common/FormComponents';
 import { TabType } from '../../types/backtest';
-import { indicators } from '@/app/constants/indicators';
+import { indicators, indicatorCategories } from '@/app/constants/indicators';
 import RSISettings, { RSISettingsData } from './RSISettings';
 import MASettings, { MASettingsData } from './MASettings';
 import PriceSettings, { PriceSettingsData } from './PriceSettings';
-import ProfitLossSettings, { ProfitLossSettingsData } from './ProfitLossSettings';
+import ProfitLossSettings from './ProfitLossSettings';
+import PriceDataSettings from './PriceDataSettings';
+import CompanyInfoSettings from './CompanyInfoSettings';
 
 interface Condition {
   indicator: string;
@@ -88,19 +90,39 @@ const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps
           onChange={(e) => handleIndicatorChange(e.target.value)}
           className="w-full h-10 px-3 bg-slate-700 rounded text-slate-200 border-0 focus:ring-1 focus:ring-slate-500 appearance-none"
         >
-          {indicators
-            .filter(indicator => {
-              // 利確/損切り条件の場合のみ損益関連のインジケーターを表示
-              if (['profit_loss_percent', 'profit_loss_amount'].includes(indicator.id)) {
-                return type === 'tp' || type === 'sl';
-              }
-              return true;
-            })
-            .map((indicator) => (
-              <option key={indicator.id} value={indicator.id}>
-                {indicator.name}
-              </option>
-            ))}
+          {/* 利確/損切り条件の場合のみポジション管理カテゴリを表示 */}
+          {(type === 'tp' || type === 'sl') && (
+            <optgroup label="ポジション管理">
+              {indicators
+                .filter(indicator => indicator.category === 'position')
+                .map((indicator) => (
+                  <option key={indicator.id} value={indicator.id}>
+                    {indicator.name}
+                  </option>
+                ))}
+            </optgroup>
+          )}
+
+          {/* カテゴリごとにインジケーターをグループ化（ポジション管理カテゴリは除外） */}
+          {indicatorCategories
+            .filter(category => category.id !== 'position') // ポジション管理カテゴリは上部で別途表示するため除外
+            .map(category => {
+              const categoryIndicators = indicators.filter(
+                indicator => indicator.category === category.id
+              );
+              
+              if (categoryIndicators.length === 0) return null;
+              
+              return (
+                <optgroup key={category.id} label={category.name}>
+                  {categoryIndicators.map(indicator => (
+                    <option key={indicator.id} value={indicator.id}>
+                      {indicator.name}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
         </select>
       </FormField>
 
@@ -145,6 +167,48 @@ const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps
           onChange={(settings) => {
             const condition: Condition = {
               indicator: 'profit_loss_amount',
+              period: 1,
+              params: {
+                operator: settings.operator,
+                targetValue: settings.targetValue
+              }
+            };
+            onChange(condition);
+          }}
+        />
+      )}
+
+      {/* 価格データ関連のインジケーター */}
+      {['price_comparison', 'volume', 'turnover_value', 'market_cap', 
+        'per', 'pbr', 'dividend_yield', 'eps', 'bps', 'roe', 'roa', 'equity_ratio',
+        'revenue', 'operating_income', 'ordinary_income', 'net_income', 
+        'total_assets', 'net_assets', 'cash_flow'].includes(selectedIndicator) && (
+        <PriceDataSettings
+          indicatorId={selectedIndicator}
+          onChange={(settings) => {
+            const condition: Condition = {
+              indicator: selectedIndicator,
+              period: 1,
+              params: {
+                priceType: settings.priceType,
+                timeReference: settings.timeReference,
+                refPeriod: settings.refPeriod,
+                operator: settings.operator,
+                targetValue: settings.targetValue
+              }
+            };
+            onChange(condition);
+          }}
+        />
+      )}
+
+      {/* 企業・市場情報関連のインジケーター */}
+      {['market', 'industry', 'sector'].includes(selectedIndicator) && (
+        <CompanyInfoSettings
+          indicatorId={selectedIndicator}
+          onChange={(settings) => {
+            const condition: Condition = {
+              indicator: selectedIndicator,
               period: 1,
               params: {
                 operator: settings.operator,
