@@ -8,7 +8,7 @@ declare global {
 // 動的にデータベースURLを設定してPrismaClientを作成
 const createPrismaClient = () => {
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   // 環境変数の存在確認
   if (!databaseUrl) {
     console.error('DATABASE_URL is not defined in environment variables');

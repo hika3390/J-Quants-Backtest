@@ -88,15 +88,15 @@ export default function BacktestResult() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/backtest/store?id=${params.id}`);
+        const response = await fetch(`/api/backtest/${params.id}`);
         const json = await response.json();
 
         if (!response.ok) {
           throw new Error(json.error || 'データの取得に失敗しました');
         }
 
-        // レスポンスの型チェック
-        if (!json.data || typeof json.data !== 'object') {
+        // レスポンスの型チェック（新しいAPIは直接データを返す）
+        if (!json || typeof json !== 'object') {
           throw new Error('無効なデータ形式です');
         }
 
@@ -115,12 +115,12 @@ export default function BacktestResult() {
         ];
 
         for (const prop of required) {
-          if (!(prop in json.data)) {
+          if (!(prop in json)) {
             throw new Error(`必須プロパティ ${prop} が見つかりません`);
           }
         }
 
-        setResult(json.data as BacktestResultType);
+        setResult(json as BacktestResultType);
       } catch (err) {
         console.error('Error fetching result:', err);
         setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');

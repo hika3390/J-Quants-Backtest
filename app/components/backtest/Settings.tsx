@@ -147,21 +147,9 @@ export default function BacktestSettings() {
 
       const result = await response.json();
 
-      // 結果を一時保存
-      const storeResponse = await fetch('/api/backtest/store', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(result),
-      });
-
-      if (!storeResponse.ok) {
-        throw new Error('バックテスト結果の保存に失敗しました');
-      }
-
-      const { id } = await storeResponse.json();
-      router.push(`/results/${id}`);
+      // /api/backtest/run で既にデータベースに保存されているので、
+      // 追加のstore呼び出しは不要
+      router.push(`/results/${result.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : '予期せぬエラーが発生しました');
     } finally {

@@ -15,4 +15,44 @@ model User {
   name          String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  backtests     BacktestResult[]
+}
+
+model BacktestResult {
+  id                    String    @id @default(cuid())
+  userId                String
+
+  // 基本情報
+  code                  String
+  startDate             String
+  endDate               String
+  executedAt            DateTime  @default(now())
+
+  // バックテスト設定
+  initialCash           Float
+  maxPosition           Float
+
+  // パフォーマンス指標
+  finalEquity           Float
+  totalReturn           Float
+  winRate               Float
+  maxDrawdown           Float
+  sharpeRatio           Float
+
+  // JSON保存データ（メインデータ）
+  priceData             Json      @db.JsonB
+  equity                Json      @db.JsonB
+  dates                 Json      @db.JsonB
+  trades                Json      @db.JsonB
+  conditions            Json      @db.JsonB
+
+  // リレーション
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // インデックス
+  @@index([userId])
+  @@index([code])
+  @@index([executedAt])
+  @@map("backtest_results")
 }

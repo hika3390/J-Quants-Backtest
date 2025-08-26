@@ -1,4 +1,4 @@
-import { DailyQuote } from '@/app/lib/jquants/api';
+import { DailyQuote } from '../utils/jquants-types';
 
 export type TabType = 'buy' | 'sell' | 'tp' | 'sl';
 
@@ -22,20 +22,6 @@ export interface ConditionGroup {
   operator: LogicalOperator;
 }
 
-export interface IndicatorType {
-  id: string;
-  name: string;
-  description: string;
-  category?: string;
-  defaultPeriod?: number;
-  parameters?: {
-    name: string;
-    type: 'number' | 'string' | 'select';
-    default: number | string;
-    options?: string[];
-  }[];
-}
-
 export interface Trade {
   entryDate: string;
   exitDate: string;
@@ -52,24 +38,42 @@ export interface BacktestResult {
   code: string;
   startDate: string;
   endDate: string;
-  executedAt: string; // バックテスト実行日時
+  executedAt: string;
   initialCash: number;
-  maxPosition?: number; // バックテスト設定
+  maxPosition?: number;
   trades: Trade[];
   finalEquity: number;
   totalReturn: number;
   winRate: number;
   maxDrawdown: number;
   sharpeRatio: number;
-  // チャート表示用データ
   priceData: DailyQuote[];
   dates: string[];
   equity: number[];
-  // インジケーター設定
   conditions: {
     buy: ConditionGroup;
     sell: ConditionGroup;
     tp: ConditionGroup;
     sl: ConditionGroup;
   };
+}
+
+export interface BacktestRequest {
+  code: string;
+  startDate: string;
+  endDate: string;
+  initialCash: number;
+  maxPosition: number;
+  conditions: Record<TabType, ConditionGroup>;
+  priceData: DailyQuote[];
+}
+
+// エンジンパラメータ型
+export interface BacktestEngineParams {
+  initialCash: number;
+  maxPosition: number;
+  buyConditions: ConditionGroup;
+  sellConditions: ConditionGroup;
+  tpConditions: ConditionGroup;
+  slConditions: ConditionGroup;
 }
