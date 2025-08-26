@@ -8,54 +8,62 @@ export class BacktestService implements IBacktestService {
   constructor(private backtestResultRepository: IBacktestResultRepository) {}
 
   async executeBacktest(request: BacktestRequest, userId: string): Promise<BacktestResult> {
-    // リクエストの妥当性検証
-    this.validateBacktestRequest(request);
+    try {
+      // リクエストの妥当性検証
+      this.validateBacktestRequest(request);
 
-    // バックテストエンジンパラメータの構築
-    const engineParams: BacktestEngineParams = {
-      initialCash: request.initialCash,
-      maxPosition: request.maxPosition,
-      buyConditions: request.conditions.buy,
-      sellConditions: request.conditions.sell,
-      tpConditions: request.conditions.tp,
-      slConditions: request.conditions.sl,
-    };
+      // バックテストエンジンパラメータの構築
+      const engineParams: BacktestEngineParams = {
+        initialCash: request.initialCash,
+        maxPosition: request.maxPosition,
+        buyConditions: request.conditions.buy,
+        sellConditions: request.conditions.sell,
+        tpConditions: request.conditions.tp,
+        slConditions: request.conditions.sl,
+      };
 
-    // バックテストエンジンを初期化して実行
-    const engine = new BacktestEngine(request.priceData, engineParams);
-    const engineResult = engine.run();
+      // バックテストエンジンを初期化して実行
+      const engine = new BacktestEngine(request.priceData, engineParams);
+      const engineResult = engine.run();
 
-    // 指定された期間のデータをフィルタリング
-    const filteredPriceData = this.filterPriceDataByDateRange(
-      request.priceData,
-      request.startDate,
-      request.endDate
-    );
+      // 指定された期間のデータをフィルタリング
+      const filteredPriceData = this.filterPriceDataByDateRange(
+        request.priceData,
+        request.startDate,
+        request.endDate
+      );
 
-    // データベースに保存するためのデータを準備
-    const createData: CreateBacktestResultData = {
-      userId,
-      code: request.code,
-      startDate: request.startDate,
-      endDate: request.endDate,
-      initialCash: request.initialCash,
-      maxPosition: request.maxPosition,
-      finalEquity: engineResult.finalEquity,
-      totalReturn: engineResult.totalReturn,
-      winRate: engineResult.winRate,
-      maxDrawdown: engineResult.maxDrawdown,
-      sharpeRatio: engineResult.sharpeRatio,
-      priceData: JSON.parse(JSON.stringify(filteredPriceData)),
-      equity: JSON.parse(JSON.stringify(engineResult.equity)),
-      dates: JSON.parse(JSON.stringify(filteredPriceData.map(d => d.Date))),
-      trades: JSON.parse(JSON.stringify(engineResult.trades)),
-      conditions: JSON.parse(JSON.stringify(request.conditions)),
-    };
+      // データベースに保存するためのデータを準備
+      const createData: CreateBacktestResultData = {
+        userId,
+        code: request.code,
+        startDate: request.startDate,
+        endDate: request.endDate,
+        initialCash: request.initialCash,
+        maxPosition: request.maxPosition,
+        finalEquity: engineResult.finalEquity,
+        totalReturn: engineResult.totalReturn,
+        winRate: engineResult.winRate,
+        maxDrawdown: engineResult.maxDrawdown,
+        sharpeRatio: engineResult.sharpeRatio,
+        priceData: JSON.parse(JSON.stringify(filteredPriceData)),
+        equity: JSON.parse(JSON.stringify(engineResult.equity)),
+        dates: JSON.parse(JSON.stringify(filteredPriceData.map(d => d.Date))),
+        trades: JSON.parse(JSON.stringify(engineResult.trades)),
+        conditions: JSON.parse(JSON.stringify(request.conditions)),
+      };
 
-    // データベースに保存
-    const savedResult = await this.backtestResultRepository.create(createData);
+      // データベースに保存
+      const savedResult = await this.backtestResultRepository.create(createData);
 
-    return savedResult;
+      return savedResult;
+    } catch (error) {
+      console.error('Error in executeBacktest:', error);
+      if (error instanceof Error && error.message.includes('Environment variable not found: DATABASE_URL')) {
+        throw new Error('データベース接続エラー: 環境変数が設定されていません。管理者にお問い合わせください。');
+      }
+      throw error;
+    }
   }
 
   async getBacktestById(id: string, userId: string): Promise<BacktestResult | null> {
@@ -63,7 +71,15 @@ export class BacktestService implements IBacktestService {
   }
 
   async getBacktestsByUser(userId: string): Promise<any[]> {
-    return await this.backtestResultRepository.findByUserId(userId);
+    try {
+      return await this.backtestResultRepository.findByUserId(userId);
+    } catch (error) {
+      console.error('Error in getBacktestsByUser:', error);
+      if (error instanceof Error && error.message.includes('Environment variable not found: DATABASE_URL')) {
+        throw new Error('データベース接続エラー: 環境変数が設定されていません。管理者にお問い合わせください。');
+      }
+      throw error;
+    }
   }
 
   async deleteBacktest(id: string, userId: string): Promise<void> {

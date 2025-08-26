@@ -1,18 +1,13 @@
-import { PrismaClient } from '@prisma/client';
 import { BacktestResultRepository } from '../repositories/backtest-result.repository';
 import { BacktestService } from '../services/backtest.service';
 import { BacktestController } from '../controllers/backtest.controller';
 import { IBacktestResultRepository } from '../interfaces/backtest-result-repository.interface';
 import { IBacktestService } from '../interfaces/backtest-service.interface';
+import { prisma } from '../../app/lib/prisma';
 
-// Prismaクライアントのシングルトンインスタンス
-let prismaInstance: PrismaClient | null = null;
-
-export function getPrismaClient(): PrismaClient {
-  if (!prismaInstance) {
-    prismaInstance = new PrismaClient();
-  }
-  return prismaInstance;
+// 既存のPrismaインスタンスを使用
+export function getPrismaClient() {
+  return prisma;
 }
 
 // DIコンテナ
