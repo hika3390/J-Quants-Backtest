@@ -77,19 +77,23 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     session: ({ session, token }) => {
-      return {
-        ...session,
-        user: {
-          ...session.user,
-          id: token.id,
-        },
+      // tokenのidが存在することを確認
+      if (token?.id) {
+        return {
+          ...session,
+          user: {
+            ...session.user,
+            id: String(token.id), // 明示的に文字列に変換
+          },
+        }
       }
+      return session
     },
     jwt: ({ token, user }) => {
-      if (user) {
+      if (user?.id) {
         return {
           ...token,
-          id: user.id,
+          id: String(user.id), // 明示的に文字列に変換
         }
       }
       return token

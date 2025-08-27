@@ -168,7 +168,7 @@ export default function BacktestResult() {
           })}
         </p>
       </div>
-      
+
       {/* パフォーマンス指標 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="bg-slate-800 p-4 rounded-lg">
@@ -179,7 +179,7 @@ export default function BacktestResult() {
             <p>総リターン: {formatPercent(result.totalReturn)}</p>
           </div>
         </div>
-        
+
         <div className="bg-slate-800 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">トレード統計</h3>
           <div className="space-y-2">
@@ -188,7 +188,7 @@ export default function BacktestResult() {
             <p>最大ドローダウン: {formatPercent(result.maxDrawdown)}</p>
           </div>
         </div>
-        
+
         <div className="bg-slate-800 p-4 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">リスク指標</h3>
           <div className="space-y-2">
@@ -200,7 +200,7 @@ export default function BacktestResult() {
       {/* 株価チャート */}
       <div className="bg-slate-800 p-4 rounded-lg mb-8">
         <h3 className="text-lg font-semibold mb-4">株価チャート</h3>
-        <StockChart 
+        <StockChart
           data={result.priceData}
           trades={result.trades}
           conditions={result.conditions || {
@@ -208,6 +208,25 @@ export default function BacktestResult() {
             sell: { operator: 'AND', conditions: [] },
             tp: { operator: 'AND', conditions: [] },
             sl: { operator: 'AND', conditions: [] }
+          }}
+        />
+      </div>
+
+            {/* 資金推移チャート */}
+      <div className="bg-slate-800 p-4 rounded-lg mb-8">
+        <h3 className="text-lg font-semibold mb-4">資金推移</h3>
+        <Line
+          options={chartOptions}
+          data={{
+            labels: result.dates,
+            datasets: [
+              {
+                label: '口座残高',
+                data: result.equity,
+                borderColor: 'rgb(99, 102, 241)',
+                tension: 0.1,
+              },
+            ],
           }}
         />
       </div>
@@ -223,8 +242,8 @@ export default function BacktestResult() {
               {result.conditions.buy && result.conditions.buy.conditions.length > 0 ? (
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 mb-2">
-                    条件の組み合わせ: {result.conditions.buy.operator === 'AND' ? 
-                      'すべての条件を満たす (AND)' : 
+                    条件の組み合わせ: {result.conditions.buy.operator === 'AND' ?
+                      'すべての条件を満たす (AND)' :
                       'いずれかの条件を満たす (OR)'}
                   </p>
                   <div className="pl-4 border-l-2 border-indigo-500">
@@ -287,8 +306,8 @@ export default function BacktestResult() {
               {result.conditions.sell && result.conditions.sell.conditions.length > 0 ? (
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 mb-2">
-                    条件の組み合わせ: {result.conditions.sell.operator === 'AND' ? 
-                      'すべての条件を満たす (AND)' : 
+                    条件の組み合わせ: {result.conditions.sell.operator === 'AND' ?
+                      'すべての条件を満たす (AND)' :
                       'いずれかの条件を満たす (OR)'}
                   </p>
                   <div className="pl-4 border-l-2 border-rose-500">
@@ -355,25 +374,7 @@ export default function BacktestResult() {
         <h3 className="text-lg font-semibold mb-4">トレード履歴</h3>
         <TradeHistoryTable trades={result.trades} />
       </div>
-      
-      {/* 資金推移チャート */}
-      <div className="bg-slate-800 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-4">資金推移</h3>
-        <Line 
-          options={chartOptions} 
-          data={{
-            labels: result.dates,
-            datasets: [
-              {
-                label: '口座残高',
-                data: result.equity,
-                borderColor: 'rgb(99, 102, 241)',
-                tension: 0.1,
-              },
-            ],
-          }} 
-        />
-      </div>
+
     </div>
   );
 }

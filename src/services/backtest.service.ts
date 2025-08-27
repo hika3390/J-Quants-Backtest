@@ -9,6 +9,11 @@ export class BacktestService implements IBacktestService {
 
   async executeBacktest(request: BacktestRequest, userId: string): Promise<BacktestResult> {
     try {
+      // userIdの妥当性チェック
+      if (!userId || typeof userId !== 'string') {
+        throw new Error(`Invalid userId provided: ${userId} (type: ${typeof userId})`);
+      }
+
       // リクエストの妥当性検証
       this.validateBacktestRequest(request);
 
