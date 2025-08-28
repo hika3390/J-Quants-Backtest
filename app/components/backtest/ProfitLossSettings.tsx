@@ -14,8 +14,8 @@ export interface ProfitLossSettingsData {
 
 export default function ProfitLossSettings({ type, onChange }: Props) {
 	const [settings, setSettings] = useState<ProfitLossSettingsData>({
-		operator: '>',
-		targetValue: 20,
+		operator: type === 'percent' ? '<' : '<', // 損切りでは通常 '<' (より小さい) を使用
+		targetValue: type === 'percent' ? -10 : -50000, // 損切りのデフォルト値を負の値に
 	});
 
   const handleChange = (field: keyof ProfitLossSettingsData, value: string) => {
@@ -52,14 +52,14 @@ export default function ProfitLossSettings({ type, onChange }: Props) {
             条件
           </label>
           <select
-            defaultValue=">"
+            defaultValue="<"
             onChange={(e) => handleChange('operator', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <option value=">">より大きい</option>
             <option value="<">より小さい</option>
-            <option value=">=">以上</option>
             <option value="<=">以下</option>
+            <option value=">">より大きい</option>
+            <option value=">=">以上</option>
             <option value="==">等しい</option>
             <option value="disabled">無効（損切りなし）</option>
           </select>
@@ -70,8 +70,7 @@ export default function ProfitLossSettings({ type, onChange }: Props) {
           </label>
           <input
             type="number"
-            min="0"
-            defaultValue="20"
+            defaultValue={type === 'percent' ? "-10" : "-50000"}
             onChange={(e) => handleChange('targetValue', e.target.value)}
             disabled={settings.operator === 'disabled'}
             className={`w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 ${

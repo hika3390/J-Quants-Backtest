@@ -106,6 +106,7 @@ export default function TradeHistoryTable({ trades }: TradeHistoryTableProps) {
               <th className="px-4 py-2 text-right">決済価格</th>
               <th className="px-4 py-2 text-right">損益</th>
               <th className="px-4 py-2 text-right">リターン</th>
+              <th className="px-4 py-2 text-center">決済理由</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700">
@@ -122,10 +123,21 @@ export default function TradeHistoryTable({ trades }: TradeHistoryTableProps) {
                 <td className={`px-4 py-2 text-right ${(trade?.returnPercent || 0) > 0 ? 'text-green-500' : 'text-red-500'}`}>
                   {formatPercent(trade?.returnPercent)}
                 </td>
+                <td className="px-4 py-2 text-center">
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    trade?.exitReason === 'take_profit' ? 'bg-green-800 text-green-200' :
+                    trade?.exitReason === 'stop_loss' ? 'bg-red-800 text-red-200' :
+                    'bg-blue-800 text-blue-200'
+                  }`}>
+                    {trade?.exitReason === 'take_profit' ? '利確' :
+                     trade?.exitReason === 'stop_loss' ? '損切り' :
+                     '売り条件'}
+                  </span>
+                </td>
               </tr>
             )) : (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                   取引履歴がありません
                 </td>
               </tr>

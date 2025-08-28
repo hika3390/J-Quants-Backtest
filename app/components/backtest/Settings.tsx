@@ -50,7 +50,7 @@ export default function BacktestSettings() {
       conditions: [{
         indicator: 'profit_loss_percent',
         period: 1,
-        params: { operator: 'disabled', targetValue: 0 }  // デフォルトで損切りなし
+        params: { operator: '<', targetValue: -10 }  // デフォルトで-10%の損切り
       }]
     }
   });
@@ -109,6 +109,32 @@ export default function BacktestSettings() {
     if (!conditions.buy || !conditions.sell || !conditions.tp || !conditions.sl) {
       setError('すべての取引条件を設定してください');
       return;
+    }
+
+    // 損切り・利確設定の論理検証
+    const slCondition = conditions.sl.conditions.find(c => c.indicator.includes('profit_loss'));
+    const tpCondition = conditions.tp.conditions.find(c => c.indicator.includes('profit_loss'));
+    
+    if (slCondition && slCondition.params.operator !== 'disabled') {
+      const slOperator = slCondition.params.operator as string;
+      const slValue = Number(slCondition.params.targetValue);
+      
+      // 損切り設定の論理チェック
+      if ((slOperator === '>' && slValue < 0) || (slOperator === '>=' && slValue < 0)) {
+        setError('損切り設定が不正です。負の損益率に対して「より大きい」条件は使用できません。「より小さい」を選択してください。');
+        return;
+      }
+    }
+
+    if (tpCondition && tpCondition.params.operator !== 'disabled') {
+      const tpOperator = tpCondition.params.operator as string;
+      const tpValue = Number(tpCondition.params.targetValue);
+      
+      // 利確設定の論理チェック
+      if ((tpOperator === '<' && tpValue > 0) || (tpOperator === '<=' && tpValue > 0)) {
+        setError('利確設定が不正です。正の損益率に対して「より小さい」条件は使用できません。「より大きい」を選択してください。');
+        return;
+      }
     }
 
     setIsLoading(true);
