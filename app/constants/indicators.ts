@@ -2,6 +2,7 @@ import { IndicatorType } from '../types/backtest';
 
 // 指標のカテゴリ定義
 export const indicatorCategories = [
+  { id: 'none', name: '条件指定' },
   { id: 'price', name: '価格データ' },
   { id: 'volume', name: '出来高・流動性' },
   { id: 'fundamental', name: 'ファンダメンタル指標' },
@@ -33,6 +34,14 @@ export const timeReferences = [
 ];
 
 export const indicators: IndicatorType[] = [
+  // 条件を指定しない
+  {
+    id: 'no_condition',
+    name: '条件を指定しない',
+    description: '買い条件または売り条件を無効にします',
+    category: 'none',
+    parameters: []
+  },
   // ポジション管理指標
   {
     id: 'profit_loss_percent',

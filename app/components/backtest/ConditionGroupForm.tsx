@@ -8,9 +8,10 @@ interface Props {
   type: TabType;
   value: ConditionGroup;
   onChange: (group: ConditionGroup) => void;
+  otherConditions?: { buy?: any[], sell?: any[] };
 }
 
-const ConditionGroupForm = memo(({ type, value, onChange }: Props) => {
+const ConditionGroupForm = memo(({ type, value, onChange, otherConditions }: Props) => {
   const handleOperatorChange = (newOperator: 'AND' | 'OR') => {
     onChange({
       ...value,
@@ -77,11 +78,12 @@ const ConditionGroupForm = memo(({ type, value, onChange }: Props) => {
                 </svg>
               </button>
             )}
-            
+
             <ConditionForm
               type={type}
               currentValue={condition}
               onChange={(newCondition) => handleConditionChange(index, newCondition)}
+              otherConditions={otherConditions}
             />
           </div>
         ))}

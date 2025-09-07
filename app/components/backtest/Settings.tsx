@@ -228,6 +228,7 @@ export default function BacktestSettings() {
                 type="buy"
                 value={conditions.buy!}
                 onChange={handleBuyConditionChange}
+                otherConditions={{ sell: conditions.sell?.conditions }}
               />
             </div>
           </div>
@@ -254,6 +255,7 @@ export default function BacktestSettings() {
                 type="sell"
                 value={conditions.sell!}
                 onChange={handleSellConditionChange}
+                otherConditions={{ buy: conditions.buy?.conditions }}
               />
             </div>
           </div>

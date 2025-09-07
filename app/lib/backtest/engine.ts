@@ -207,46 +207,49 @@ export class BacktestEngine {
    */
   private generateSignalForCondition(condition: Condition, quote: DailyQuote, prices: number[]): number {
     const currentIndex = this.quotes.findIndex(q => q.Date === quote.Date);
-    if (currentIndex === -1) return 0;
+    if (currentIndex === -1) {
+      return 0;
+    }
 
-    switch (condition.indicator) {
-      case 'price': {
+    try {
+      switch (condition.indicator) {
+        case 'price': {
         const priceType = condition.params.priceType as string;
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const currentPrice = this.getTimeReferenceValue(currentIndex, priceType, timeReference, refPeriod);
-        
+
         return this.evaluateComparison(currentPrice, operator, targetValue) ? 1 : -1;
       }
-      
+
       case 'price_comparison': {
         const priceType1 = condition.params.priceType1 as string;
         const timeRef1 = condition.params.timeReference1 as string;
         const refPeriod1 = Number(condition.params.refPeriod1 || 0);
-        
+
         const priceType2 = condition.params.priceType2 as string;
         const timeRef2 = condition.params.timeReference2 as string;
         const refPeriod2 = Number(condition.params.refPeriod2 || 0);
-        
+
         const operator = condition.params.operator as string;
-        
+
         const value1 = this.getTimeReferenceValue(currentIndex, priceType1, timeRef1, refPeriod1);
         const value2 = this.getTimeReferenceValue(currentIndex, priceType2, timeRef2, refPeriod2);
-        
+
         return this.evaluateComparison(value1, operator, value2) ? 1 : -1;
       }
       case 'profit_loss_percent': {
         if (!this.position) return -1;
         const operator = condition.params.operator as string;
-        
+
         // 「無効」オプションの場合は常に-1を返す（シグナルなし）
         if (operator === 'disabled') {
           return -1;
         }
-        
+
         const targetValue = Number(condition.params.targetValue);
         const currentPnL = ((quote.Close - this.position.entryPrice) / this.position.entryPrice) * 100;
 
@@ -255,12 +258,12 @@ export class BacktestEngine {
       case 'profit_loss_amount': {
         if (!this.position) return -1;
         const operator = condition.params.operator as string;
-        
+
         // 「無効」オプションの場合は常に-1を返す（シグナルなし）
         if (operator === 'disabled') {
           return -1;
         }
-        
+
         const targetValue = Number(condition.params.targetValue);
         const currentPnL = (quote.Close - this.position.entryPrice) * this.position.quantity;
 
@@ -271,126 +274,123 @@ export class BacktestEngine {
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const volume = this.quotes[refIndex].Volume;
-        
+
         return this.evaluateComparison(volume, operator, targetValue) ? 1 : -1;
       }
-      
+
       case 'turnover_value': {
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const turnoverValue = this.quotes[refIndex].TurnoverValue || 0;
-        
+
         return this.evaluateComparison(turnoverValue, operator, targetValue) ? 1 : -1;
       }
-      
+
       case 'market_cap': {
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const marketCap = this.quotes[refIndex].MarketCapitalization || 0;
-        
+
         return this.evaluateComparison(marketCap, operator, targetValue) ? 1 : -1;
       }
-      
+
       // ファンダメンタル指標
       case 'per': {
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const per = this.quotes[refIndex].PER || 0;
-        
+
         return this.evaluateComparison(per, operator, targetValue) ? 1 : -1;
       }
-      
+
       case 'pbr': {
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const pbr = this.quotes[refIndex].PBR || 0;
-        
+
         return this.evaluateComparison(pbr, operator, targetValue) ? 1 : -1;
       }
-      
+
       case 'dividend_yield': {
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const dividendYield = this.quotes[refIndex].DividendYield || 0;
-        
+
         return this.evaluateComparison(dividendYield, operator, targetValue) ? 1 : -1;
       }
-      
+
       case 'roe': {
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const roe = this.quotes[refIndex].ROE || 0;
-        
+
         return this.evaluateComparison(roe, operator, targetValue) ? 1 : -1;
       }
-      
+
       case 'roa': {
         const timeReference = condition.params.timeReference as string;
         const refPeriod = Number(condition.params.refPeriod || 0);
         const operator = condition.params.operator as string;
         const targetValue = Number(condition.params.targetValue);
-        
+
         const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, refPeriod, this.quotes);
         const roa = this.quotes[refIndex].ROA || 0;
-        
+
         return this.evaluateComparison(roa, operator, targetValue) ? 1 : -1;
       }
-      
+
       // 企業・市場情報
       case 'market': {
         const operator = condition.params.operator as string;
         const targetValue = condition.params.targetValue as string;
         const market = quote.Market || '';
-        
-        return (operator === '==' && market === targetValue) || 
-               (operator === '!=' && market !== targetValue) ? 1 : -1;
+
+        return (operator === '==' && market === targetValue) || (operator === '!=' && market !== targetValue) ? 1 : -1;
       }
-      
+
       case 'industry': {
         const operator = condition.params.operator as string;
         const targetValue = condition.params.targetValue as string;
         const industry = quote.Industry || '';
-        
-        return (operator === '==' && industry === targetValue) || 
-               (operator === '!=' && industry !== targetValue) ? 1 : -1;
+
+        return (operator === '==' && industry === targetValue) || (operator === '!=' && industry !== targetValue) ? 1 : -1;
       }
-      
+
       case 'sector': {
         const operator = condition.params.operator as string;
         const targetValue = condition.params.targetValue as string;
         const sector = quote.Sector || '';
-        
-        return (operator === '==' && sector === targetValue) || 
-               (operator === '!=' && sector !== targetValue) ? 1 : -1;
+
+        return (operator === '==' && sector === targetValue) || (operator === '!=' && sector !== targetValue) ? 1 : -1;
       }
-      
+
       // テクニカル指標
       case 'rsi': {
         const rsiValues = calculateRSI([quote], condition.period);
@@ -406,19 +406,19 @@ export class BacktestEngine {
         const operator = condition.params.operator as string;
         const compareTarget = condition.params.compareTarget as string || 'price';
         const comparePeriod = Number(condition.params.comparePeriod || 5);
-        
+
         // 価格データを取得
         const priceData = this.quotes.slice(0, currentIndex + 1).map(q => this.getQuoteValue(q, priceType));
-        
+
         // MAを計算
-        const maValues = maType === 'SMA' 
+        const maValues = maType === 'SMA'
           ? calculateMA(priceData, condition.period)
           : calculateEMA(priceData, condition.period);
-        
+
         if (maValues.length === 0) return 0;
-        
+
         const currentMA = maValues[maValues.length - 1];
-        
+
         if (compareTarget === 'price') {
           // 現在の価格とMAを比較
           const currentPrice = this.getQuoteValue(quote, priceType);
@@ -428,9 +428,9 @@ export class BacktestEngine {
           const compareMA = maType === 'SMA'
             ? calculateMA(priceData, comparePeriod)
             : calculateEMA(priceData, comparePeriod);
-            
+
           if (compareMA.length === 0) return 0;
-          
+
           const compareValue = compareMA[compareMA.length - 1];
           return this.evaluateComparison(currentMA, operator, compareValue) ? 1 : -1;
         }
@@ -438,16 +438,16 @@ export class BacktestEngine {
       case 'bollinger': {
         const stdDev = Number(condition.params.stdDev || 2);
         const priceType = condition.params.priceType as string || 'close';
-        
+
         // 価格データを取得
         const priceData = this.quotes.slice(0, currentIndex + 1).map(q => this.getQuoteValue(q, priceType));
-        
+
         // 移動平均を計算
         const ma = calculateMA(priceData.slice(-condition.period), condition.period);
         if (ma.length === 0) return 0;
-        
+
         const currentMA = ma[ma.length - 1];
-        
+
         // 標準偏差を計算
         const recentPrices = priceData.slice(-condition.period);
         const sum = recentPrices.reduce((a, b) => a + b, 0);
@@ -455,14 +455,14 @@ export class BacktestEngine {
         const squareDiffs = recentPrices.map(value => Math.pow(value - avg, 2));
         const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
         const sd = Math.sqrt(avgSquareDiff);
-        
+
         // バンドを計算
         const upperBand = currentMA + (sd * stdDev);
         const lowerBand = currentMA - (sd * stdDev);
-        
+
         // 現在の価格
         const currentPrice = this.getQuoteValue(quote, priceType);
-        
+
         // 価格がバンドを超えているかチェック
         if (currentPrice > upperBand) {
           return -1; // 売りシグナル（上限超え）
@@ -472,23 +472,38 @@ export class BacktestEngine {
           return 0;  // シグナルなし（バンド内）
         }
       }
-      
+
+      case 'no_condition':
+        return -1;
+
       default:
         throw new Error(`未対応のインジケーター: ${condition.indicator}`);
+      }
+    } catch (error) {
+      throw error;
     }
   }
 
   /**
    * 条件グループの評価
    */
-  private evaluateConditionGroup(group: ConditionGroup, quote: DailyQuote, prices: number[]): boolean {
-    const results = group.conditions.map(condition => 
-      this.generateSignalForCondition(condition, quote, prices) === 1
-    );
+  private evaluateConditionGroup(group: ConditionGroup, quote: DailyQuote, prices: number[], conditionType?: string): boolean {
+    // 「条件を指定しない」が含まれている場合の特別な処理
+    const hasNoCondition = group.conditions.some(condition => condition.indicator === 'no_condition');
+    if (hasNoCondition) {
+      return false; // 条件を指定しない場合は条件を無効化（false）
+    }
 
-    return group.operator === 'AND'
+    const results = group.conditions.map(condition => {
+      const signal = this.generateSignalForCondition(condition, quote, prices);
+      return signal === 1;
+    });
+
+    const finalResult = group.operator === 'AND'
       ? results.every(Boolean)
       : results.some(Boolean);
+
+    return finalResult;
   }
 
   /**
@@ -497,14 +512,29 @@ export class BacktestEngine {
   public run(): BacktestResult {
     const prices = this.quotes.map(q => q.Close);
 
+    // 条件の「条件を指定しない」フラグをチェック
+    const buyHasNoCondition = this.params.buyConditions.conditions.some(c => c.indicator === 'no_condition');
+    const sellHasNoCondition = this.params.sellConditions.conditions.some(c => c.indicator === 'no_condition');
+
     // 各日の価格でシミュレーション
     for (let i = 0; i < this.quotes.length; i++) {
       const quote = this.quotes[i];
       const priceHistory = prices.slice(0, i + 1);
 
-      // ポジションがない場合は買いシグナルを評価
+      // ポジションがない場合のエントリー判定
       if (!this.position) {
-        const shouldBuy = this.evaluateConditionGroup(this.params.buyConditions, quote, priceHistory);
+        let shouldBuy = false;
+
+        if (buyHasNoCondition) {
+          // 買い条件が「条件を指定しない」の場合、売り条件でエントリー判定
+          shouldBuy = this.evaluateConditionGroup(this.params.sellConditions, quote, priceHistory, '売り条件（買いエントリー用）');
+        } else if (sellHasNoCondition) {
+          // 売り条件が「条件を指定しない」の場合、買い条件でエントリー判定
+          shouldBuy = this.evaluateConditionGroup(this.params.buyConditions, quote, priceHistory, '買い条件');
+        } else {
+          // 通常の場合、買い条件でエントリー判定
+          shouldBuy = this.evaluateConditionGroup(this.params.buyConditions, quote, priceHistory, '買い条件');
+        }
 
         if (shouldBuy) {
           const maxQuantity = Math.floor((this.params.initialCash * this.params.maxPosition / 100) / quote.Close);
@@ -518,27 +548,29 @@ export class BacktestEngine {
             this.cash -= quantity * quote.Close;
           }
         }
-      } 
+      }
       // ポジションがある場合は決済条件を評価
       else {
         // 1. 損切り条件を最優先で評価
-        const shouldStopLoss = this.evaluateConditionGroup(this.params.slConditions, quote, priceHistory);
+        const shouldStopLoss = this.evaluateConditionGroup(this.params.slConditions, quote, priceHistory, '損切り条件');
         if (shouldStopLoss) {
           this.closePosition(quote, 'stop_loss');
           continue;  // 次の日へ
         }
 
         // 2. 利確条件を評価
-        const shouldTakeProfit = this.evaluateConditionGroup(this.params.tpConditions, quote, priceHistory);
+        const shouldTakeProfit = this.evaluateConditionGroup(this.params.tpConditions, quote, priceHistory, '利確条件');
         if (shouldTakeProfit) {
           this.closePosition(quote, 'take_profit');
           continue;  // 次の日へ
         }
 
-        // 3. 一般的な売り条件を評価
-        const shouldSell = this.evaluateConditionGroup(this.params.sellConditions, quote, priceHistory);
-        if (shouldSell) {
-          this.closePosition(quote, 'sell');
+        // 3. 一般的な売り条件を評価（sellHasNoCondition の場合はスキップ）
+        if (!sellHasNoCondition) {
+          const shouldSell = this.evaluateConditionGroup(this.params.sellConditions, quote, priceHistory, '売り条件');
+          if (shouldSell) {
+            this.closePosition(quote, 'sell');
+          }
         }
       }
 
@@ -637,7 +669,7 @@ export class BacktestEngine {
     }
 
     // シャープレシオを計算（年率）
-    const dailyReturns = this.equity.map((equity, i) => 
+    const dailyReturns = this.equity.map((equity, i) =>
       i === 0 ? 0 : (equity - this.equity[i - 1]) / this.equity[i - 1]
     );
     const averageReturn = dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length;

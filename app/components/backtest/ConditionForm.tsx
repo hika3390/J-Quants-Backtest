@@ -21,12 +21,26 @@ interface ConditionFormProps {
   type: TabType;
   currentValue?: Condition;
   onChange: (condition: Condition | null) => void;
+  otherConditions?: { buy?: Condition[], sell?: Condition[] };
 }
 
-const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps) => {
+const ConditionForm = memo(({ type, currentValue, onChange, otherConditions }: ConditionFormProps) => {
   const [selectedIndicator, setSelectedIndicator] = useState<string>(
     currentValue?.indicator || (type === 'tp' || type === 'sl' ? 'profit_loss_percent' : 'rsi')
   );
+
+  // 他の条件で「条件を指定しない」が選択されているかチェック
+  const isNoConditionSelectedElsewhere = () => {
+    if (type === 'buy') {
+      return otherConditions?.sell?.some(condition => condition.indicator === 'no_condition') || false;
+    }
+    if (type === 'sell') {
+      return otherConditions?.buy?.some(condition => condition.indicator === 'no_condition') || false;
+    }
+    return false;
+  };
+
+  const isNoConditionDisabled = isNoConditionSelectedElsewhere();
 
   // インジケーター選択が変更されたときの処理
   const handleIndicatorChange = (indicatorId: string) => {
@@ -110,14 +124,19 @@ const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps
               const categoryIndicators = indicators.filter(
                 indicator => indicator.category === category.id
               );
-              
+
               if (categoryIndicators.length === 0) return null;
-              
+
               return (
                 <optgroup key={category.id} label={category.name}>
                   {categoryIndicators.map(indicator => (
-                    <option key={indicator.id} value={indicator.id}>
+                    <option 
+                      key={indicator.id} 
+                      value={indicator.id}
+                      disabled={indicator.id === 'no_condition' && isNoConditionDisabled}
+                    >
                       {indicator.name}
+                      {indicator.id === 'no_condition' && isNoConditionDisabled ? ' (他の条件で既に選択済み)' : ''}
                     </option>
                   ))}
                 </optgroup>
@@ -218,6 +237,29 @@ const ConditionForm = memo(({ type, currentValue, onChange }: ConditionFormProps
             onChange(condition);
           }}
         />
+      )}
+
+      {/* 条件を指定しない場合の表示 */}
+      {selectedIndicator === 'no_condition' && (
+        <div className="bg-slate-600/30 rounded p-4 text-center">
+          <p className="text-slate-300 text-sm">
+            この条件は無効になります。売買シグナルは発生しません。
+          </p>
+        </div>
+      )}
+
+      {/* 無効化されている場合の警告メッセージ */}
+      {isNoConditionDisabled && (
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-3">
+          <div className="flex items-center gap-2">
+            <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="text-yellow-500 text-sm font-medium">
+              「条件を指定しない」は{type === 'buy' ? '売り条件' : '買い条件'}で既に選択されているため使用できません。
+            </span>
+          </div>
+        </div>
       )}
     </div>
   );

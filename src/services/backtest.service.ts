@@ -39,6 +39,18 @@ export class BacktestService implements IBacktestService {
       );
 
       // データベースに保存するためのデータを準備
+      // null チェックとデフォルト値の設定
+      const safeEngineResult = {
+        finalEquity: engineResult.finalEquity || 0,
+        totalReturn: engineResult.totalReturn || 0,
+        winRate: isNaN(engineResult.winRate) ? 0 : engineResult.winRate,
+        maxDrawdown: engineResult.maxDrawdown || 0,
+        sharpeRatio: isNaN(engineResult.sharpeRatio) ? 0 : engineResult.sharpeRatio,
+        trades: engineResult.trades || [],
+        equity: engineResult.equity || [],
+        dates: engineResult.dates || []
+      };
+
       const createData: CreateBacktestResultData = {
         userId,
         code: request.code,
@@ -46,16 +58,16 @@ export class BacktestService implements IBacktestService {
         endDate: request.endDate,
         initialCash: request.initialCash,
         maxPosition: request.maxPosition,
-        finalEquity: engineResult.finalEquity,
-        totalReturn: engineResult.totalReturn,
-        winRate: engineResult.winRate,
-        maxDrawdown: engineResult.maxDrawdown,
-        sharpeRatio: engineResult.sharpeRatio,
-        priceData: JSON.parse(JSON.stringify(filteredPriceData)),
-        equity: JSON.parse(JSON.stringify(engineResult.equity)),
-        dates: JSON.parse(JSON.stringify(filteredPriceData.map(d => d.Date))),
-        trades: JSON.parse(JSON.stringify(engineResult.trades)),
-        conditions: JSON.parse(JSON.stringify(request.conditions)),
+        finalEquity: safeEngineResult.finalEquity,
+        totalReturn: safeEngineResult.totalReturn,
+        winRate: safeEngineResult.winRate,
+        maxDrawdown: safeEngineResult.maxDrawdown,
+        sharpeRatio: safeEngineResult.sharpeRatio,
+        priceData: filteredPriceData,
+        equity: safeEngineResult.equity,
+        dates: filteredPriceData.map(d => d.Date),
+        trades: safeEngineResult.trades,
+        conditions: request.conditions,
       };
 
       // データベースに保存
