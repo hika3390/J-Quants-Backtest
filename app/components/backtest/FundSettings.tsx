@@ -1,7 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 interface FundSettingsProps {
   onChange: (settings: FundSettingsData) => void;
+  initialValues?: FundSettingsData;
 }
 
 export interface FundSettingsData {
@@ -9,15 +12,33 @@ export interface FundSettingsData {
   maxPosition: number;
 }
 
-export default function FundSettings({ onChange }: FundSettingsProps) {
+export default function FundSettings({ onChange, initialValues }: FundSettingsProps) {
+  const [currentValues, setCurrentValues] = useState<FundSettingsData>({
+    initialCash: 1000000,
+    maxPosition: 100
+  });
+
+  // 初期値が提供された場合に状態を更新（初回のみ）
+  useEffect(() => {
+    if (initialValues && (
+      initialValues.initialCash !== currentValues.initialCash ||
+      initialValues.maxPosition !== currentValues.maxPosition
+    )) {
+      setCurrentValues(initialValues);
+    }
+  }, [initialValues]);
+
   const handleChange = (field: keyof FundSettingsData, value: string) => {
     const numValue = parseInt(value, 10);
     if (isNaN(numValue)) return;
 
-    onChange({
-      initialCash: field === 'initialCash' ? numValue : 1000000,
-      maxPosition: field === 'maxPosition' ? numValue : 100,
-    });
+    const newValues = {
+      ...currentValues,
+      [field]: numValue
+    };
+
+    setCurrentValues(newValues);
+    onChange(newValues);
   };
 
   return (
@@ -31,7 +52,7 @@ export default function FundSettings({ onChange }: FundSettingsProps) {
             type="number"
             min="0"
             step="10000"
-            defaultValue="1000000"
+            value={currentValues.initialCash}
             onChange={(e) => handleChange('initialCash', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
@@ -44,7 +65,7 @@ export default function FundSettings({ onChange }: FundSettingsProps) {
             type="number"
             min="0"
             max="100"
-            defaultValue="100"
+            value={currentValues.maxPosition}
             onChange={(e) => handleChange('maxPosition', e.target.value)}
             className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />

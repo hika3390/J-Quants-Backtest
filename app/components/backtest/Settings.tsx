@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { FormSection } from '../common/FormComponents';
@@ -8,13 +8,26 @@ import BasicSettings, { BasicSettingsData } from './BasicSettings';
 import FundSettings, { FundSettingsData } from './FundSettings';
 import { TabType, ConditionGroup } from '../../types/backtest';
 import ConditionGroupForm from './ConditionGroupForm';
+import {
+  saveBacktestSettings,
+  loadBacktestSettings,
+  clearBacktestSettingsCache,
+  hasBacktestSettingsCache
+} from '@/app/lib/cache/backtestSettings';
 
 export default function BacktestSettings() {
   const router = useRouter();
+
+  // デフォルト日付を計算
+  const today = new Date().toISOString().split('T')[0];
+  const defaultStartDate = new Date();
+  defaultStartDate.setMonth(defaultStartDate.getMonth() - 3);
+  const threeMonthsAgo = defaultStartDate.toISOString().split('T')[0];
+
   const [basicSettings, setBasicSettings] = useState<BasicSettingsData>({
     code: '',
-    startDate: '',
-    endDate: '',
+    startDate: threeMonthsAgo,
+    endDate: today,
   });
   const [fundSettings, setFundSettings] = useState<FundSettingsData>({
     initialCash: 1000000,
@@ -93,6 +106,77 @@ export default function BacktestSettings() {
     sl: true
   });
 
+  const [hasCachedData, setHasCachedData] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // コンポーネントマウント時にキャッシュから設定を復元
+  useEffect(() => {
+    if (!isInitialized) {
+      const cachedSettings = loadBacktestSettings();
+      if (cachedSettings) {
+        setBasicSettings(cachedSettings.basicSettings);
+        setFundSettings(cachedSettings.fundSettings);
+        setConditions(cachedSettings.conditions);
+        setHasCachedData(true);
+        console.log('キャッシュから設定を復元しました:', new Date(cachedSettings.lastSaved).toLocaleString());
+      } else {
+        setHasCachedData(false);
+      }
+      setIsInitialized(true);
+    }
+  }, [isInitialized]);
+
+  // キャッシュをクリアする関数
+  const handleClearCache = () => {
+    clearBacktestSettingsCache();
+    setHasCachedData(false);
+    setIsInitialized(false);
+    // デフォルト設定にリセット
+    setBasicSettings({
+      code: '',
+      startDate: threeMonthsAgo,
+      endDate: today,
+    });
+    setFundSettings({
+      initialCash: 1000000,
+      maxPosition: 100
+    });
+    setConditions({
+      buy: {
+        operator: 'AND',
+        conditions: [{
+          indicator: 'rsi',
+          period: 14,
+          params: { overboughtThreshold: 70, oversoldThreshold: 30 }
+        }]
+      },
+      sell: {
+        operator: 'AND',
+        conditions: [{
+          indicator: 'rsi',
+          period: 14,
+          params: { overboughtThreshold: 70, oversoldThreshold: 30 }
+        }]
+      },
+      tp: {
+        operator: 'AND',
+        conditions: [{
+          indicator: 'profit_loss_percent',
+          period: 1,
+          params: { operator: '>', targetValue: 10 }
+        }]
+      },
+      sl: {
+        operator: 'AND',
+        conditions: [{
+          indicator: 'profit_loss_percent',
+          period: 1,
+          params: { operator: '<', targetValue: -10 }
+        }]
+      }
+    });
+  };
+
   const toggleSection = (section: keyof typeof collapsedSections) => {
     setCollapsedSections(prev => ({
       ...prev,
@@ -114,11 +198,11 @@ export default function BacktestSettings() {
     // 損切り・利確設定の論理検証
     const slCondition = conditions.sl.conditions.find(c => c.indicator.includes('profit_loss'));
     const tpCondition = conditions.tp.conditions.find(c => c.indicator.includes('profit_loss'));
-    
+
     if (slCondition && slCondition.params.operator !== 'disabled') {
       const slOperator = slCondition.params.operator as string;
       const slValue = Number(slCondition.params.targetValue);
-      
+
       // 損切り設定の論理チェック
       if ((slOperator === '>' && slValue < 0) || (slOperator === '>=' && slValue < 0)) {
         setError('損切り設定が不正です。負の損益率に対して「より大きい」条件は使用できません。「より小さい」を選択してください。');
@@ -129,7 +213,7 @@ export default function BacktestSettings() {
     if (tpCondition && tpCondition.params.operator !== 'disabled') {
       const tpOperator = tpCondition.params.operator as string;
       const tpValue = Number(tpCondition.params.targetValue);
-      
+
       // 利確設定の論理チェック
       if ((tpOperator === '<' && tpValue > 0) || (tpOperator === '<=' && tpValue > 0)) {
         setError('利確設定が不正です。正の損益率に対して「より小さい」条件は使用できません。「より大きい」を選択してください。');
@@ -139,6 +223,9 @@ export default function BacktestSettings() {
 
     setIsLoading(true);
     setError(null);
+
+    // バックテスト実行前に設定をキャッシュに保存
+    saveBacktestSettings(basicSettings, fundSettings, conditions);
 
     try {
       // 株価データを取得
@@ -185,6 +272,26 @@ export default function BacktestSettings() {
 
   return (
     <div className="space-y-6">
+      {/* キャッシュ復元通知 */}
+      {hasCachedData && (
+        <div className="flex items-center justify-between p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-blue-500/90 font-medium">
+              前回の設定を復元しました
+            </span>
+          </div>
+          <button
+            onClick={handleClearCache}
+            className="px-3 py-1 text-sm bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded transition-colors"
+          >
+            設定をリセット
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="flex items-center justify-center gap-2 p-4 bg-red-500/10 border border-red-500/20 rounded-lg animate-[fadeIn_0.2s_ease-out]">
           <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,11 +304,17 @@ export default function BacktestSettings() {
       )}
 
       <FormSection title="基本設定">
-        <BasicSettings onChange={setBasicSettings} />
+        <BasicSettings
+          onChange={setBasicSettings}
+          initialValues={basicSettings}
+        />
       </FormSection>
 
       <FormSection title="資金・ポジション設定">
-        <FundSettings onChange={setFundSettings} />
+        <FundSettings
+          onChange={setFundSettings}
+          initialValues={fundSettings}
+        />
       </FormSection>
 
       <FormSection title="インジケーター設定">

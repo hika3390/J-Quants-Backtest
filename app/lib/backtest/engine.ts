@@ -12,43 +12,43 @@ function calculateTimeReferenceIndex(currentIndex: number, timeReference: string
   }
 
   const currentDate = new Date(quotes[currentIndex].Date);
-  
+
   switch (timeReference) {
     case 'days':
       // 単純に日数を引く
       const targetIndex = currentIndex - period;
       return targetIndex >= 0 ? targetIndex : 0;
-      
+
     case 'weeks':
       // 週数 * 7日を引く
       const weeksIndex = currentIndex - (period * 7);
       return weeksIndex >= 0 ? weeksIndex : 0;
-      
+
     case 'months': {
       // 月を引く
       const targetDate = new Date(currentDate);
       targetDate.setMonth(targetDate.getMonth() - period);
-      
+
       // 日付に最も近いインデックスを探す
       return findClosestDateIndex(targetDate, quotes, currentIndex);
     }
-      
+
     case 'quarters': {
       // 四半期（3ヶ月）を引く
       const targetDate = new Date(currentDate);
       targetDate.setMonth(targetDate.getMonth() - (period * 3));
-      
+
       return findClosestDateIndex(targetDate, quotes, currentIndex);
     }
-      
+
     case 'years': {
       // 年を引く
       const targetDate = new Date(currentDate);
       targetDate.setFullYear(targetDate.getFullYear() - period);
-      
+
       return findClosestDateIndex(targetDate, quotes, currentIndex);
     }
-      
+
     default:
       return currentIndex;
   }
@@ -65,7 +65,7 @@ function findClosestDateIndex(targetDate: Date, quotes: DailyQuote[], currentInd
       return i;
     }
   }
-  
+
   return 0; // 見つからない場合は最初のデータを返す
 }
 
@@ -76,36 +76,6 @@ interface BacktestParameters {
   sellConditions: ConditionGroup;
   tpConditions: ConditionGroup;  // 利確条件
   slConditions: ConditionGroup;  // 損切り条件
-}
-
-interface MASignalParams {
-  type: 'SMA' | 'EMA';
-  period: number;
-}
-
-function generateMASignals(prices: number[], params: MASignalParams): number[] {
-  const signals: number[] = [];
-  const maValues = params.type === 'SMA' 
-    ? calculateMA(prices, params.period)
-    : calculateEMA(prices, params.period);
-
-  // 最初のperiod日分はシグナルなし
-  for (let i = 0; i < params.period; i++) {
-    signals.push(0);
-  }
-
-  // 価格がMAを上回ったら買い、下回ったら売り
-  for (let i = params.period; i < prices.length; i++) {
-    if (prices[i] > maValues[i]) {
-      signals.push(1);  // 買いシグナル
-    } else if (prices[i] < maValues[i]) {
-      signals.push(-1); // 売りシグナル
-    } else {
-      signals.push(0);  // シグナルなし
-    }
-  }
-
-  return signals;
 }
 
 interface Position {
@@ -174,15 +144,15 @@ export class BacktestEngine {
    * 時間参照を考慮して価格データを取得
    */
   private getTimeReferenceValue(
-    currentIndex: number, 
-    priceType: string, 
-    timeReference: string, 
+    currentIndex: number,
+    priceType: string,
+    timeReference: string,
     period: number
   ): number {
     if (!timeReference || timeReference === 'current' || period === 0) {
       return this.getQuoteValue(this.quotes[currentIndex], priceType);
     }
-    
+
     const refIndex = calculateTimeReferenceIndex(currentIndex, timeReference, period, this.quotes);
     return this.getQuoteValue(this.quotes[refIndex], priceType);
   }
@@ -436,25 +406,31 @@ export class BacktestEngine {
         }
       }
       case 'bollinger': {
-        const stdDev = Number(condition.params.stdDev || 2);
-        const priceType = condition.params.priceType as string || 'close';
+        // パラメータを取得（フロントエンドの設定に合わせて統一）
+        const stdDev = Number(condition.params['標準偏差'] || condition.params.stdDev || 2);
+        const priceType = (condition.params['価格タイプ'] || condition.params.priceType || 'close') as string;
+
+        // 十分なデータがあるかチェック
+        if (currentIndex < condition.period - 1) {
+          return 0; // データ不足の場合はシグナルなし
+        }
 
         // 価格データを取得
         const priceData = this.quotes.slice(0, currentIndex + 1).map(q => this.getQuoteValue(q, priceType));
 
-        // 移動平均を計算
-        const ma = calculateMA(priceData.slice(-condition.period), condition.period);
-        if (ma.length === 0) return 0;
-
-        const currentMA = ma[ma.length - 1];
-
-        // 標準偏差を計算
+        // 期間分のデータを取得
         const recentPrices = priceData.slice(-condition.period);
+        if (recentPrices.length < condition.period) {
+          return 0; // データ不足
+        }
+
+        // 移動平均を計算
         const sum = recentPrices.reduce((a, b) => a + b, 0);
-        const avg = sum / recentPrices.length;
-        const squareDiffs = recentPrices.map(value => Math.pow(value - avg, 2));
-        const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
-        const sd = Math.sqrt(avgSquareDiff);
+        const currentMA = sum / recentPrices.length;
+
+        // 標準偏差を計算（母集団標準偏差）
+        const variance = recentPrices.reduce((sum, price) => sum + Math.pow(price - currentMA, 2), 0) / recentPrices.length;
+        const sd = Math.sqrt(variance);
 
         // バンドを計算
         const upperBand = currentMA + (sd * stdDev);
@@ -507,6 +483,13 @@ export class BacktestEngine {
   }
 
   /**
+   * 株価データが有効かどうかをチェック
+   */
+  private isValidPriceData(quote: DailyQuote): boolean {
+    return quote.Close != null && quote.Close > 0;
+  }
+
+  /**
    * バックテストを実行
    */
   public run(): BacktestResult {
@@ -520,6 +503,19 @@ export class BacktestEngine {
     for (let i = 0; i < this.quotes.length; i++) {
       const quote = this.quotes[i];
       const priceHistory = prices.slice(0, i + 1);
+
+      // 株価が0円やNULLの場合はスキップ（祝日など）
+      if (!this.isValidPriceData(quote)) {
+        // ポジションがある場合も、前日の株価で資産価値を計算
+        if (this.position && i > 0) {
+          const previousQuote = this.quotes[i - 1];
+          if (this.isValidPriceData(previousQuote)) {
+            this.updateEquity(previousQuote);
+            this.dates.push(quote.Date);
+          }
+        }
+        continue;
+      }
 
       // ポジションがない場合のエントリー判定
       if (!this.position) {
@@ -581,32 +577,21 @@ export class BacktestEngine {
     // ポジションが残っている場合は最終日で決済
     if (this.position) {
       const lastQuote = this.quotes[this.quotes.length - 1];
-      this.closePosition(lastQuote);
+      // 最終日の株価が無効な場合は、有効な最後の日で決済
+      if (!this.isValidPriceData(lastQuote)) {
+        // 後ろから有効な株価データを探す
+        for (let i = this.quotes.length - 2; i >= 0; i--) {
+          if (this.isValidPriceData(this.quotes[i])) {
+            this.closePosition(this.quotes[i]);
+            break;
+          }
+        }
+      } else {
+        this.closePosition(lastQuote);
+      }
     }
 
     return this.calculateResults();
-  }
-
-  /**
-   * シグナルに基づいて売買を実行
-   */
-  private processSignal(signal: number, quote: DailyQuote) {
-    if (signal === 1 && !this.position) {
-      // 買いシグナルかつポジションがない場合は新規購入
-      const maxQuantity = Math.floor((this.params.initialCash * this.params.maxPosition / 100) / quote.Close);
-      const quantity = Math.min(Math.floor(this.cash / quote.Close), maxQuantity);
-      if (quantity > 0) {
-        this.position = {
-          entryPrice: quote.Close,
-          quantity,
-          entryDate: quote.Date
-        };
-        this.cash -= quantity * quote.Close;
-      }
-    } else if (signal === -1 && this.position) {
-      // 売りシグナルかつポジションがある場合は決済
-      this.closePosition(quote);
-    }
   }
 
   /**

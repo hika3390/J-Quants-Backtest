@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { FormField } from '../common/FormComponents';
 
 export interface BasicSettingsData {
@@ -11,9 +11,10 @@ export interface BasicSettingsData {
 
 interface BasicSettingsProps {
   onChange?: (data: BasicSettingsData) => void;
+  initialValues?: BasicSettingsData;
 }
 
-const BasicSettings = memo(({ onChange }: BasicSettingsProps) => {
+const BasicSettings = memo(({ onChange, initialValues }: BasicSettingsProps) => {
 
   // 本日の日付を取得
   const today = new Date().toISOString().split('T')[0];
@@ -28,8 +29,19 @@ const BasicSettings = memo(({ onChange }: BasicSettingsProps) => {
     startDate: threeMonthsAgo,
     endDate: today,
   });
+
+  // 初期値が提供された場合に状態を更新（初回のみ）
+  useEffect(() => {
+    if (initialValues && (
+      initialValues.code !== currentValues.code ||
+      initialValues.startDate !== currentValues.startDate ||
+      initialValues.endDate !== currentValues.endDate
+    )) {
+      setCurrentValues(initialValues);
+    }
+  }, [initialValues]);
   const [codeError, setCodeError] = useState<string>('');
-  
+
   // 証券コードのバリデーション
   const validateCode = (code: string): boolean => {
     if (!code) {
@@ -58,7 +70,7 @@ const BasicSettings = memo(({ onChange }: BasicSettingsProps) => {
       <FormField label="開始日">
         <input
           type="date"
-          defaultValue={threeMonthsAgo}
+          value={currentValues.startDate}
           max={today}
           onChange={(e) => handleChange('startDate', e.target.value)}
           className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 focus:border-gray-500 focus:outline-none transition-base"
@@ -67,7 +79,7 @@ const BasicSettings = memo(({ onChange }: BasicSettingsProps) => {
       <FormField label="終了日">
         <input
           type="date"
-          defaultValue={today}
+          value={currentValues.endDate}
           max={today}
           onChange={(e) => handleChange('endDate', e.target.value)}
           className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 focus:border-gray-500 focus:outline-none transition-base"
@@ -89,7 +101,7 @@ const BasicSettings = memo(({ onChange }: BasicSettingsProps) => {
             className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded text-gray-100 focus:border-gray-500 focus:outline-none transition-base"
           />
         </FormField>
-        
+
         <FormField label="サンプル銘柄">
           <select
             value={currentValues.code}

@@ -866,7 +866,20 @@ export const indicators: IndicatorType[] = [
     description: '価格変動の範囲を表示',
     category: 'technical',
     defaultPeriod: 20,
-    parameters: [{ name: '標準偏差', type: 'number', default: 2 }]
+    parameters: [
+      {
+        name: '価格タイプ',
+        type: 'select',
+        options: ['open', 'close', 'high', 'low', 'adjustmentClose', 'vwap'],
+        default: 'close'
+      },
+      {
+        name: '標準偏差',
+        type: 'select',
+        options: ['1', '2', '3'],
+        default: '2'
+      }
+    ]
   },
   {
     id: 'macd',

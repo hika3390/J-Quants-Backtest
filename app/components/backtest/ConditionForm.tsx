@@ -10,6 +10,7 @@ import PriceSettings, { PriceSettingsData } from './PriceSettings';
 import ProfitLossSettings from './ProfitLossSettings';
 import PriceDataSettings from './PriceDataSettings';
 import CompanyInfoSettings from './CompanyInfoSettings';
+import BollingerSettings from './BollingerSettings';
 
 interface Condition {
   indicator: string;
@@ -53,6 +54,15 @@ const ConditionForm = memo(({ type, currentValue, onChange, otherConditions }: C
         period: indicator.defaultPeriod || 1,
         params: {}
       };
+
+      // ボリンジャーバンドの場合はデフォルトパラメータを設定
+      if (indicatorId === 'bollinger') {
+        defaultCondition.params = {
+          '価格タイプ': 'close',
+          '標準偏差': '2'
+        };
+      }
+
       onChange(defaultCondition);
     }
   };
@@ -96,6 +106,19 @@ const ConditionForm = memo(({ type, currentValue, onChange, otherConditions }: C
     onChange(condition);
   };
 
+  // ボリンジャーバンド設定が変更されたときの処理
+  const handleBollingerChange = (params: { priceType: string; stdDev: string }) => {
+    const condition: Condition = {
+      indicator: 'bollinger',
+      period: currentValue?.period || 20,
+      params: {
+        '価格タイプ': params.priceType,
+        '標準偏差': params.stdDev
+      }
+    };
+    onChange(condition);
+  };
+
   return (
     <div className="space-y-4">
       <FormField label="インジケーター">
@@ -130,8 +153,8 @@ const ConditionForm = memo(({ type, currentValue, onChange, otherConditions }: C
               return (
                 <optgroup key={category.id} label={category.name}>
                   {categoryIndicators.map(indicator => (
-                    <option 
-                      key={indicator.id} 
+                    <option
+                      key={indicator.id}
                       value={indicator.id}
                       disabled={indicator.id === 'no_condition' && isNoConditionDisabled}
                     >
@@ -154,6 +177,15 @@ const ConditionForm = memo(({ type, currentValue, onChange, otherConditions }: C
       {selectedIndicator === 'ma' && (
         <MASettings
           onChange={handleMAChange}
+        />
+      )}
+
+      {selectedIndicator === 'bollinger' && (
+        <BollingerSettings
+          period={currentValue?.period || 20}
+          priceType={(currentValue?.params?.['価格タイプ'] || currentValue?.params?.priceType || 'close') as string}
+          stdDev={(currentValue?.params?.['標準偏差'] || currentValue?.params?.stdDev || '2') as string}
+          onChange={handleBollingerChange}
         />
       )}
 
@@ -198,9 +230,9 @@ const ConditionForm = memo(({ type, currentValue, onChange, otherConditions }: C
       )}
 
       {/* 価格データ関連のインジケーター */}
-      {['price_comparison', 'volume', 'turnover_value', 'market_cap', 
+      {['price_comparison', 'volume', 'turnover_value', 'market_cap',
         'per', 'pbr', 'dividend_yield', 'eps', 'bps', 'roe', 'roa', 'equity_ratio',
-        'revenue', 'operating_income', 'ordinary_income', 'net_income', 
+        'revenue', 'operating_income', 'ordinary_income', 'net_income',
         'total_assets', 'net_assets', 'cash_flow'].includes(selectedIndicator) && (
         <PriceDataSettings
           indicatorId={selectedIndicator}
