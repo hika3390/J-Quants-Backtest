@@ -82,6 +82,7 @@ interface Position {
   entryPrice: number;
   quantity: number;
   entryDate: string;
+  lastAdjustmentFactor?: number; // 最後に適用された調整係数
 }
 
 export interface Trade {
@@ -490,6 +491,38 @@ export class BacktestEngine {
   }
 
   /**
+   * 株式分割を検知して、ポジションを調整
+   */
+  private handleStockSplit(quote: DailyQuote): void {
+    if (!this.position || !quote.AdjustmentFactor) {
+      return;
+    }
+
+    // 前回の調整係数と比較
+    const previousFactor = this.position.lastAdjustmentFactor || 1.0;
+    const currentFactor = quote.AdjustmentFactor;
+
+    // 調整係数が変化した場合は株式分割が発生
+    if (Math.abs(currentFactor - previousFactor) > 0.0001) {
+      const splitRatio = previousFactor / currentFactor;
+
+      // 保有株数を調整（例: 1:2分割なら株数が2倍）
+      this.position.quantity = Math.floor(this.position.quantity * splitRatio);
+
+      // 買値を調整（例: 1:2分割なら買値が1/2）
+      this.position.entryPrice = this.position.entryPrice / splitRatio;
+
+      // 調整係数を更新
+      this.position.lastAdjustmentFactor = currentFactor;
+
+      console.log(`株式分割検知: ${quote.Date}, 分割比率: 1:${splitRatio.toFixed(2)}, 調整後株数: ${this.position.quantity}, 調整後買値: ${this.position.entryPrice}`);
+    } else if (!this.position.lastAdjustmentFactor) {
+      // 初回設定
+      this.position.lastAdjustmentFactor = currentFactor;
+    }
+  }
+
+  /**
    * バックテストを実行
    */
   public run(): BacktestResult {
@@ -539,7 +572,8 @@ export class BacktestEngine {
             this.position = {
               entryPrice: quote.Close,
               quantity,
-              entryDate: quote.Date
+              entryDate: quote.Date,
+              lastAdjustmentFactor: quote.AdjustmentFactor || 1.0
             };
             this.cash -= quantity * quote.Close;
           }
@@ -547,6 +581,8 @@ export class BacktestEngine {
       }
       // ポジションがある場合は決済条件を評価
       else {
+        // 株式分割の検知と調整
+        this.handleStockSplit(quote);
         // 1. 損切り条件を最優先で評価
         const shouldStopLoss = this.evaluateConditionGroup(this.params.slConditions, quote, priceHistory, '損切り条件');
         if (shouldStopLoss) {

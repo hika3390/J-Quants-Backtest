@@ -8,11 +8,12 @@ export interface DailyQuote {
   Close: number;
   Volume: number;
   AdjustmentClose?: number;  // 調整後終値
+  AdjustmentFactor?: number; // 調整係数（株式分割検知用）
   VWAP?: number;             // 出来高加重平均価格
   TurnoverValue?: number;    // 売買代金
   SharesOutstanding?: number; // 発行済株式数
   MarketCapitalization?: number; // 時価総額
-  
+
   // ファンダメンタル指標
   PER?: number;              // 株価収益率
   PBR?: number;              // 株価純資産倍率
@@ -22,7 +23,7 @@ export interface DailyQuote {
   ROE?: number;              // 自己資本利益率
   ROA?: number;              // 総資産利益率
   EquityRatio?: number;      // 自己資本比率
-  
+
   // 財務データ
   Revenue?: number;          // 売上高
   OperatingIncome?: number;  // 営業利益
@@ -31,7 +32,7 @@ export interface DailyQuote {
   TotalAssets?: number;      // 総資産
   NetAssets?: number;        // 純資産
   CashFlow?: number;         // キャッシュフロー
-  
+
   // 企業・市場情報
   Code?: string;             // 証券コード
   Name?: string;             // 銘柄名
@@ -96,7 +97,7 @@ class JQuantsApi {
 
     const data = await response.json();
     console.log('API Response data:', data);
-    
+
     if (!data.daily_quotes) {
       throw new Error('Daily quotes not found in response');
     }
